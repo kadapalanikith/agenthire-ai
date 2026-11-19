@@ -42,6 +42,7 @@ const workflowSpec = z
   .object({
     _meta: meta,
     workflow: z.array(agentNode).min(1),
+    node_labels: z.record(agentNode, z.string().min(1).max(40)),
     checkpoint_nodes: z.array(agentNode),
     branches: z.partialRecord(
       agentNode,

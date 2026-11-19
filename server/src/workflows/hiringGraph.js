@@ -34,7 +34,7 @@ function buildHiringGraph({ deps, checkpointer, retryOverrides, handlersOverride
   for (const node of spec.workflow) {
     if (!handlers[node]) throw new Error(`No handler for workflow node "${node}"`);
     const isCheckpoint = spec.checkpoint_nodes.includes(node);
-    graph.addNode(node, withNodeLifecycle(node, handlers[node], { maxAttempts: retryPolicy.maxAttempts }), {
+    graph.addNode(node, withNodeLifecycle(node, handlers[node], { maxAttempts: retryPolicy.maxAttempts, isCheckpoint }), {
       // Checkpoint nodes wait for a person; retrying them makes no sense.
       retryPolicy: isCheckpoint ? undefined : retryPolicy,
     });

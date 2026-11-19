@@ -10,7 +10,12 @@ function getWorkflowSpec() {
     id: workflow._meta.id,
     version: workflow._meta.version,
     workflow: workflow.workflow,
+    node_labels: workflow.node_labels,
     checkpoint_nodes: workflow.checkpoint_nodes,
+    approval_rules: {
+      override_requires_reason: getSpec('evaluation/shortlisting-rules').override_requires_reason,
+      override_reason_min_length: getSpec('evaluation/fairness-policy').override_reason_min_length,
+    },
     branches: workflow.branches,
     node_states: nodeStates.states,
     node_states_version: nodeStates._meta.version,

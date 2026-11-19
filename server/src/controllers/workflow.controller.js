@@ -18,4 +18,18 @@ async function start(req, res) {
   return sendSuccess(res, { workflow }, { status: 202 });
 }
 
-module.exports = { list, get, start };
+async function approve(req, res) {
+  const result = await workflowService.approveWorkflow(
+    { workflowId: req.body.workflow_id, decision: req.body.decision, reason: req.body.reason },
+    req.user,
+    getWorkflowRunner()
+  );
+  return sendSuccess(res, result, { status: 202 });
+}
+
+async function retry(req, res) {
+  const workflow = await workflowService.retryWorkflow(req.body.workflow_id, req.user, getWorkflowRunner());
+  return sendSuccess(res, { workflow }, { status: 202 });
+}
+
+module.exports = { list, get, start, approve, retry };

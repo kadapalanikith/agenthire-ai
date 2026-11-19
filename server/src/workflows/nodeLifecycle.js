@@ -15,9 +15,25 @@ const { logWorkflowFailure } = require('../utils/workflowFailureLogger');
  * handler(state) must resolve { update, output, input? }:
  *   update → LangGraph state update; output → stored in logs/state_output.
  */
-function withNodeLifecycle(agentName, handler, { maxAttempts }) {
-  return async function lifecycleNode(state) {
+// Attempts within one runner execution (LangGraph's retry loop counts per
+// invocation; node_states.attempts keeps the lifetime total for history).
+const runAttempts = new Map();
+
+function nextRunAttempt(runId, workflowId, agentName) {
+  const key = `${runId || 'no-run'}:${workflowId}:${agentName}`;
+  const n = (runAttempts.get(key) || 0) + 1;
+  runAttempts.set(key, n);
+  return n;
+}
+
+function clearRunAttempts(runId) {
+  for (const key of runAttempts.keys()) if (key.startsWith(`${runId}:`)) runAttempts.delete(key);
+}
+
+function withNodeLifecycle(agentName, handler, { maxAttempts, isCheckpoint = false }) {
+  return async function lifecycleNode(state, config) {
     const workflowId = state.workflow_id;
+    const runAttempt = nextRunAttempt(config?.configurable?.run_id, workflowId, agentName);
     const startedAt = new Date();
     const wf = await Workflow.findByIdAndUpdate(
       workflowId,
@@ -29,7 +45,9 @@ function withNodeLifecycle(agentName, handler, { maxAttempts }) {
           [`node_states.${agentName}.started_at`]: startedAt,
           [`node_states.${agentName}.completed_at`]: null,
         },
-        $inc: { [`node_states.${agentName}.attempts`]: 1 },
+        // A checkpoint node is re-entered by LangGraph when it resumes; that is
+        // the same step continuing, not a new attempt.
+        ...(isCheckpoint ? { $max: { [`node_states.${agentName}.attempts`]: 1 } } : { $inc: { [`node_states.${agentName}.attempts`]: 1 } }),
       },
       { returnDocument: 'after' }
     );
@@ -65,7 +83,7 @@ function withNodeLifecycle(agentName, handler, { maxAttempts }) {
         throw err;
       }
       const { code, retryable } = classifyError(err);
-      const final = !retryable || attempt >= maxAttempts;
+      const final = !retryable || runAttempt >= maxAttempts;
       await finish(
         'failed',
         { error: { code, message: err.message, retryable, stack: err.stack } },
@@ -85,4 +103,4 @@ function withNodeLifecycle(agentName, handler, { maxAttempts }) {
   };
 }
 
-module.exports = { withNodeLifecycle };
+module.exports = { withNodeLifecycle, clearRunAttempts };

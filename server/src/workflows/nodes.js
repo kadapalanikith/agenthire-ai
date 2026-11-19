@@ -81,7 +81,7 @@ function createNodeHandlers(deps) {
       const approval = resolveApproval(decision, state.recommendation);
       await markSkippedBranches(state.workflow_id, approval.decision);
       await Candidate.updateOne({ _id: state.candidate_id }, { $set: { status: approval.decision === 'approve' ? 'approved' : 'rejected' } });
-      await Workflow.updateOne({ _id: state.workflow_id }, { $set: { approval } });
+      await Workflow.updateOne({ _id: state.workflow_id }, { $set: { approval, pending_decision: null } });
       return { update: { approval }, output: approval };
     },
 

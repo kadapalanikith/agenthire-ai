@@ -9,6 +9,8 @@ const { getSpec, getSpecVersions } = require('../utils/specLoader');
 const { AppError } = require('../utils/AppError');
 const { ERROR_CODES } = require('../constants/errorCodes');
 const { ROLES } = require('../constants/roles');
+const { buildApprovalRequest, resolveApproval, isOverride } = require('../agents/humanApproval.agent');
+const { APPROVAL_DECISIONS } = require('../constants/workflow');
 
 /**
  * Create the persisted workflow record for a new application. Execution
@@ -122,7 +124,20 @@ async function getWorkflowDetail(id, user) {
     Job.findById(wf.job_id).select('title'),
   ]);
   const json = wf.toJSON();
+  const outputs = json.state_output || {};
   return {
+    // What the recruiter reviews at the checkpoint (null when not waiting).
+    approval_request:
+      json.status === 'waiting_approval' && outputs.shortlisting_agent
+        ? {
+            ...buildApprovalRequest({ recommendation: outputs.shortlisting_agent, matchResult: outputs.matching_agent }),
+            // Server-computed so clients never re-implement the override rule.
+            reason_required: Object.fromEntries(
+              APPROVAL_DECISIONS.map((d) => [d, getSpec('evaluation/shortlisting-rules').override_requires_reason && isOverride(d, outputs.shortlisting_agent.decision)])
+            ),
+            reason_min_length: getSpec('evaluation/fairness-policy').override_reason_min_length,
+          }
+        : null,
     workflow: {
       id: json.id,
       status: json.status,
@@ -130,6 +145,7 @@ async function getWorkflowDetail(id, user) {
       retry_count: json.retry_count,
       last_error: json.last_error,
       approval: json.approval,
+      decision_pending: Boolean(json.pending_decision),
       spec_versions: json.spec_versions,
       created_at: json.created_at,
       updated_at: json.updated_at,
@@ -169,4 +185,64 @@ async function startWorkflow(candidateId, user, runner) {
   return summarizeWorkflow(wf);
 }
 
-module.exports = { createPendingWorkflow, summarizeWorkflow, listWorkflows, getWorkflowDetail, startWorkflow };
+/**
+ * POST /workflow/approve — the recruiter's decision at the human approval
+ * checkpoint. Validated here (including the override-reason rule), then
+ * stored and the workflow moved waiting_approval → running in ONE atomic
+ * update, so two concurrent approvals cannot both succeed. The runner
+ * resumes the graph from its checkpoint with the stored decision.
+ */
+async function approveWorkflow({ workflowId, decision, reason }, user, runner) {
+  if (!runner) throw new AppError(503, ERROR_CODES.SERVICE_UNAVAILABLE, 'The workflow engine is not running');
+  const wf = await loadAccessible(workflowId, user);
+  if (wf.status !== 'waiting_approval') {
+    throw new AppError(409, ERROR_CODES.WORKFLOW_STATE_CONFLICT, `Workflow is ${wf.status}; only workflows waiting for approval can be decided`);
+  }
+  const recommendation = wf.toJSON().state_output?.shortlisting_agent;
+  if (!recommendation) throw new AppError(409, ERROR_CODES.WORKFLOW_STATE_CONFLICT, 'The workflow has no AI recommendation to review');
+
+  const pendingDecision = { decision, reason: reason || null, decided_by: String(user._id), decided_at: new Date().toISOString() };
+  let approval;
+  try {
+    approval = resolveApproval(pendingDecision, recommendation);
+  } catch (err) {
+    throw new AppError(400, ERROR_CODES.VALIDATION_ERROR, err.message, [{ path: 'reason', message: err.message, location: 'body' }]);
+  }
+
+  const claimed = await Workflow.findOneAndUpdate(
+    { _id: wf._id, status: 'waiting_approval', pending_decision: null },
+    { $set: { status: 'running', pending_decision: pendingDecision } },
+    { returnDocument: 'after' }
+  );
+  if (!claimed) throw new AppError(409, ERROR_CODES.WORKFLOW_STATE_CONFLICT, 'This workflow was already decided');
+  runner.enqueue(claimed._id, { mode: 'continue' });
+  return { workflow: summarizeWorkflow(claimed), approval: { ...approval, decided_by: String(user._id) } };
+}
+
+/**
+ * POST /workflow/retry — re-run a failed workflow from its checkpoint. Only
+ * the failed node (and those after it) run again; completed nodes are not
+ * repeated.
+ */
+async function retryWorkflow(workflowId, user, runner) {
+  if (!runner) throw new AppError(503, ERROR_CODES.SERVICE_UNAVAILABLE, 'The workflow engine is not running');
+  const wf = await loadAccessible(workflowId, user);
+  const claimed = await Workflow.findOneAndUpdate(
+    { _id: wf._id, status: 'failed' },
+    { $set: { status: 'running', last_error: null }, $inc: { retry_count: 1 } },
+    { returnDocument: 'after' }
+  );
+  if (!claimed) throw new AppError(409, ERROR_CODES.WORKFLOW_STATE_CONFLICT, `Workflow is ${wf.status}; only failed workflows can be retried`);
+  runner.enqueue(claimed._id, { mode: 'continue' });
+  return summarizeWorkflow(claimed);
+}
+
+module.exports = {
+  createPendingWorkflow,
+  summarizeWorkflow,
+  listWorkflows,
+  getWorkflowDetail,
+  startWorkflow,
+  approveWorkflow,
+  retryWorkflow,
+};

@@ -44,6 +44,9 @@ const workflowSchema = new mongoose.Schema(
     state_output: { type: mongoose.Schema.Types.Mixed, default: {} },
     retry_count: { type: Number, default: 0 },
     approval: { type: approvalSchema, default: null },
+    // Recruiter decision accepted by POST /workflow/approve but not yet applied
+    // by the graph. Kept so a crash between the two can be resumed.
+    pending_decision: { type: mongoose.Schema.Types.Mixed, default: null },
     spec_versions: { type: mongoose.Schema.Types.Mixed, required: true },
     last_error: { type: mongoose.Schema.Types.Mixed, default: null },
   },
