@@ -43,3 +43,14 @@ jest.mock('react-native-reanimated', () => {
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(() => Promise.resolve(true)) }));
+
+jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
+
+jest.mock('expo-web-browser', () => ({
+  openBrowserAsync: jest.fn(() => Promise.resolve({ type: 'opened' })),
+  WebBrowserPresentationStyle: { PAGE_SHEET: 'pageSheet' },
+}));
+
+// The app runs on React Native's FormData (file parts as { uri, name, type }),
+// not Node's; use the same implementation in tests.
+global.FormData = require('react-native/Libraries/Network/FormData').default;

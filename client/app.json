@@ -37,9 +37,12 @@
           "imageWidth": 160,
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF",
-          "dark": { "backgroundColor": "#0E1116" }
+          "dark": {
+            "backgroundColor": "#0E1116"
+          }
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

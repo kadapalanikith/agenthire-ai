@@ -28,11 +28,12 @@ export function JobStats() {
   if (summary.isPending) {
     return (
       <View className="gap-4" testID="job-stats-loading">
-        <View className="flex-row gap-3">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-[88px] flex-1 rounded-2xl" />
-          ))}
-        </View>
+        {[0, 1].map((row) => (
+          <View key={row} className="flex-row gap-3">
+            <Skeleton className="h-[88px] flex-1 rounded-2xl" />
+            <Skeleton className="h-[88px] flex-1 rounded-2xl" />
+          </View>
+        ))}
         <Skeleton className="h-40 w-full rounded-2xl" />
       </View>
     );
@@ -46,15 +47,34 @@ export function JobStats() {
     );
   }
 
-  const { jobs, recent_jobs: recent } = summary.data;
+  const { jobs, candidates, workflows, recent_jobs: recent } = summary.data;
+  const completion = workflows.completion_rate === null ? '—' : `${workflows.completion_rate}%`;
 
   return (
     <View className="gap-4">
-      <View className="flex-row gap-3">
-        <Stat label="Jobs" value={jobs.total} testID="stat-total" />
-        <Stat label="Open" value={jobs.open} testID="stat-open" />
-        <Stat label="Closed" value={jobs.closed} testID="stat-closed" />
+      <View className="gap-3">
+        <View className="flex-row gap-3">
+          <Stat label="Open jobs" value={jobs.open} testID="stat-open" />
+          <Stat label="Candidates" value={candidates.total} testID="stat-candidates" />
+        </View>
+        <View className="flex-row gap-3">
+          <Stat label="Workflows" value={workflows.total} testID="stat-workflows" />
+          <Stat label="Completed" value={completion} testID="stat-completion" />
+        </View>
       </View>
+      {candidates.by_status.awaiting_review > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/dashboard/candidates')}
+          className="flex-row items-center justify-between rounded-2xl border border-warning/30 bg-warning-muted p-4"
+          testID="needs-review-banner"
+        >
+          <Text tone="warning" className="font-semibold">
+            {candidates.by_status.awaiting_review} {candidates.by_status.awaiting_review === 1 ? 'candidate needs' : 'candidates need'} your review
+          </Text>
+          <ChevronRight size={16} color={colors.warning} />
+        </Pressable>
+      ) : null}
 
       <Card>
         <CardHeader

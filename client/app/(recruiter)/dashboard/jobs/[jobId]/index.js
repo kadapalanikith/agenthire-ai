@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pencil } from 'lucide-react-native';
+import { ExternalLink, Pencil, Users } from 'lucide-react-native';
 import {
   Button,
   Card,
+  CardHeader,
   ChipList,
   ErrorState,
   InlineAlert,
@@ -139,6 +140,34 @@ export default function JobDetailScreen() {
         {!canManage ? <InlineAlert tone="info" message="This job belongs to another recruiter. You can view it but not edit it." /> : null}
 
         <ShareLinkCard job={job} />
+
+        {canManage ? (
+          <Card testID="job-candidates-card">
+            <CardHeader
+              title="Candidates"
+              subtitle={`${job.candidate_count ?? 0} ${job.candidate_count === 1 ? 'application' : 'applications'} received`}
+            />
+            <View className="flex-row gap-2">
+              <Button
+                title="View candidates"
+                icon={Users}
+                size="md"
+                className="flex-1"
+                onPress={() => router.push(`/dashboard/candidates?jobId=${job.id}`)}
+                testID="view-job-candidates"
+              />
+              <Button
+                title="Public page"
+                icon={ExternalLink}
+                variant="secondary"
+                size="md"
+                className="flex-1"
+                onPress={() => router.push(`/jobs/${job.id}`)}
+                testID="open-public-page"
+              />
+            </View>
+          </Card>
+        ) : null}
 
         <Card className="gap-4">
           <View className="gap-2">
