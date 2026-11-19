@@ -6,7 +6,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from './Text';
 
 export const TextField = forwardRef(function TextField(
-  { label, error, hint, secureTextEntry, className, testID, ...inputProps },
+  { label, error, hint, secureTextEntry, multiline, right, className, testID, ...inputProps },
   ref
 ) {
   const { colors } = useTheme();
@@ -22,7 +22,8 @@ export const TextField = forwardRef(function TextField(
       ) : null}
       <View
         className={cn(
-          'h-12 flex-row items-center rounded-xl border bg-surface px-3.5',
+          'flex-row rounded-xl border bg-surface px-3.5',
+          multiline ? 'min-h-[132px] items-start py-3' : 'h-12 items-center',
           error ? 'border-danger' : focused ? 'border-primary' : 'border-border-strong'
         )}
       >
@@ -34,6 +35,8 @@ export const TextField = forwardRef(function TextField(
           placeholderTextColor={colors.subtle}
           selectionColor={colors.primary}
           secureTextEntry={hidden}
+          multiline={multiline}
+          textAlignVertical={multiline ? 'top' : 'center'}
           onFocus={(e) => {
             setFocused(true);
             inputProps.onFocus?.(e);
@@ -43,8 +46,9 @@ export const TextField = forwardRef(function TextField(
             inputProps.onBlur?.(e);
           }}
           {...inputProps}
-          style={{ outlineStyle: 'none' }}
+          style={[{ outlineStyle: 'none' }, multiline ? { minHeight: 108 } : null]}
         />
+        {right}
         {secureTextEntry ? (
           <Pressable
             accessibilityRole="button"

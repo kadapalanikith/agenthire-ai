@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import Constants from 'expo-constants';
 import { LogOut, Monitor, Moon, Sun } from 'lucide-react-native';
-import { Badge, Button, Card, Screen, Text } from '../../../src/components/ui';
+import { Badge, Button, Card, Screen, SegmentedControl, Text } from '../../../src/components/ui';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useThemeStore } from '../../../src/stores/themeStore';
 import { useSignOut } from '../../../src/features/auth/hooks';
-import { useTheme } from '../../../src/theme/ThemeProvider';
-import { cn } from '../../../src/lib/cn';
 
 const THEME_OPTIONS = [
   { value: 'system', label: 'System', Icon: Monitor },
@@ -25,31 +23,9 @@ function initials(name = '') {
 }
 
 function ThemeSelector() {
-  const { colors } = useTheme();
   const preference = useThemeStore((s) => s.preference);
   const setPreference = useThemeStore((s) => s.setPreference);
-  return (
-    <View className="flex-row gap-1 rounded-xl bg-surface-muted p-1" accessibilityRole="radiogroup">
-      {THEME_OPTIONS.map(({ value, label, Icon }) => {
-        const active = preference === value;
-        return (
-          <Pressable
-            key={value}
-            testID={`theme-${value}`}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: active }}
-            onPress={() => setPreference(value)}
-            className={cn('h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-lg', active && 'border border-border bg-surface')}
-          >
-            <Icon size={15} color={active ? colors.foreground : colors.muted} />
-            <Text variant="label" tone={active ? 'default' : 'muted'}>
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+  return <SegmentedControl options={THEME_OPTIONS} value={preference} onChange={setPreference} testID="theme" />;
 }
 
 export default function SettingsScreen() {
