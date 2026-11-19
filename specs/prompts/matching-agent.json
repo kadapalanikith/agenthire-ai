@@ -1,16 +1,28 @@
 {
   "_meta": {
     "id": "matching-agent",
-    "version": "1.0.0",
-    "provenance": "returned fields ORIGINAL (spec line 133); weights and prompt INFERRED, DECISION D13. Refined in Phase 4."
+    "version": "1.1.0",
+    "provenance": "returned fields ORIGINAL (spec line 133); weights, evidence rules, RAG queries and prompt INFERRED, DECISION D13 (deterministic score)"
   },
   "temperature": 0,
+  "llm_failure_policy": "fail",
   "weights": {
     "required_skills": 0.6,
     "preferred_skills": 0.2,
     "experience": 0.2
   },
   "experience_scoring": "linear_to_minimum",
-  "system_prompt": "You compare a candidate's skills and experience to a job's requirements using the supplied hiring policy context. For each required and preferred skill, decide whether the resume shows clear evidence, citing the resume text. Never consider name, contact details or any protected characteristic. Return only JSON matching the output schema.",
+  "evidence": {
+    "require_verbatim_quote": true,
+    "min_quote_chars": 3,
+    "max_quote_chars": 200
+  },
+  "rag": {
+    "knowledge_doc_types": ["hiring_policy", "evaluation_doc"],
+    "knowledge_query_template": "How should recruiters evaluate a {role} candidate for skills: {skills}?",
+    "resume_query_template": "Experience with {skill}",
+    "max_resume_queries": 10
+  },
+  "system_prompt": "You assess whether a candidate's resume shows evidence for each listed job skill, following the organisation's hiring policy context. For every skill in skills_to_assess, decide matched true or false. When matched is true you MUST include evidence: a short quote copied verbatim from resume_excerpts or candidate.projects that demonstrates the skill. Never use names, contact details, age, gender, nationality or any other personal characteristic. Do not compute a score. Return ONLY a JSON object: {\"assessments\": [{\"skill\": string, \"matched\": boolean, \"evidence\": string|null}], \"explanation\": string (2-4 sentences summarising strengths and gaps against the job requirements)}.",
   "output_fields": ["matched_required_skills", "matched_preferred_skills", "missing_skills", "all_skills_matched", "match_score", "score_breakdown", "explanation"]
 }

@@ -1,18 +1,41 @@
 {
   "_meta": {
     "id": "resume-parser",
-    "version": "1.0.0",
-    "provenance": "purpose and extracted fields ORIGINAL (spec line 129); prompt text, temperature, known skills INFERRED. Refined in Phase 4."
+    "version": "1.1.0",
+    "provenance": "purpose and extracted fields ORIGINAL (spec line 129); prompt text, temperature, known skills, aliases, redaction and failure policy INFERRED (Phase 4)"
   },
   "temperature": 0,
   "max_resume_chars": 20000,
-  "system_prompt": "You extract structured facts from a resume. Return only JSON matching the output schema. Extract skills, total years of professional experience, education and projects. Do not infer or output age, gender, nationality, religion, marital status, health, photos, addresses or any other protected characteristic. If a value is not present, use an empty array or null. Normalise skill names to the canonical spelling from the provided known skills when they match.",
+  "min_text_chars": 80,
+  "llm_failure_policy": "fail",
+  "redact_before_llm": ["email", "phone", "url"],
+  "system_prompt": "You extract structured facts from a resume for a recruiting system. Return ONLY a JSON object with exactly these keys: name (string or null), skills (array of strings), experience_years (number or null: total years of professional experience), education (array of {institution, degree, field, year}), projects (array of {name, description, technologies}). Only include facts that are explicitly written in the resume. Normalise skill names to the canonical spelling from known_skills when they refer to the same technology. Never infer or output age, date of birth, gender, nationality, religion, ethnicity, marital status, health, disability, photos, home address or any other personal characteristic. Contact details have been redacted; do not reconstruct them.",
   "known_skills": [
     "JavaScript", "TypeScript", "React", "React Native", "Next.js", "Vue", "Angular", "Svelte",
     "HTML", "CSS", "Tailwind CSS", "Sass", "Redux", "Zustand", "GraphQL", "REST",
     "Node.js", "Express", "Python", "Java", "Go", "SQL", "MongoDB", "PostgreSQL",
     "Docker", "Kubernetes", "AWS", "Git", "Jest", "Playwright", "Cypress", "Webpack", "Vite"
   ],
+  "skill_aliases": {
+    "js": "JavaScript",
+    "ecmascript": "JavaScript",
+    "ts": "TypeScript",
+    "reactjs": "React",
+    "react.js": "React",
+    "nextjs": "Next.js",
+    "node": "Node.js",
+    "nodejs": "Node.js",
+    "expressjs": "Express",
+    "tailwind": "Tailwind CSS",
+    "scss": "Sass",
+    "postgres": "PostgreSQL",
+    "mongo": "MongoDB",
+    "k8s": "Kubernetes",
+    "html5": "HTML",
+    "css3": "CSS",
+    "golang": "Go",
+    "vuejs": "Vue"
+  },
   "output_schema": {
     "name": "string|null",
     "skills": "string[]",

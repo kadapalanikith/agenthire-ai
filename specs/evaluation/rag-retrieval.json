@@ -1,12 +1,13 @@
 {
   "_meta": {
     "id": "rag-retrieval",
-    "version": "1.0.0",
-    "provenance": "chunk sizes, top_k, minimum_similarity ORIGINAL (spec line 144); collections/vector settings INFERRED"
+    "version": "1.1.0",
+    "provenance": "chunk sizes, top_k, minimum_similarity ORIGINAL (spec line 144); collections, vector settings, query instruction and knowledge sources INFERRED"
   },
   "embedding_model": "BAAI/bge-small-en-v1.5",
   "vector_size": 384,
   "distance": "Cosine",
+  "query_instruction": "Represent this sentence for searching relevant passages: ",
   "chunking": {
     "resume": { "chunk_size": 500, "chunk_overlap": 0 },
     "policy": { "chunk_size": 1000, "chunk_overlap": 0 }
@@ -16,5 +17,10 @@
     "resumes": "agenthire_resumes",
     "knowledge": "agenthire_knowledge"
   },
-  "knowledge_doc_types": ["hiring_policy", "evaluation_doc", "interview_guideline"]
+  "knowledge_doc_types": ["hiring_policy", "evaluation_doc", "interview_guideline"],
+  "knowledge_sources": [
+    { "dir": "knowledge/hiring-policies", "doc_type": "hiring_policy" },
+    { "dir": "knowledge/evaluation-docs", "doc_type": "evaluation_doc" },
+    { "dir": "knowledge/interview-guidelines", "doc_type": "interview_guideline" }
+  ]
 }
