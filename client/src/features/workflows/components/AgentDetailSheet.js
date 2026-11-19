@@ -31,6 +31,8 @@ const OUTPUT_FIELDS = {
   matching_agent: ['match_score', 'matched_required_skills', 'matched_preferred_skills', 'missing_skills', 'explanation_source', 'explanation'],
   shortlisting_agent: ['decision', 'applied_band', 'role_minimum_score', 'role_minimum_applied', 'recommendation_only', 'spec_version'],
   human_approval: ['decision', 'ai_recommendation', 'overridden', 'reason', 'decided_at'],
+  interview_agent: ['source', 'llm', 'interview_rounds', 'focus_areas', 'removed_questions', 'spec_version'],
+  email_agent: ['decision', 'template_id', 'subject', 'delivery', 'provider_id', 'recipient', 'sent_at'],
 };
 
 /** Bottom-sheet style modal with one agent's execution details and attempt history. */

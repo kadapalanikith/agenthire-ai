@@ -24,8 +24,19 @@ export function summarizeOutputs(stateOutput = {}) {
     const a = o.human_approval;
     out.human_approval = `Recruiter chose "${a.decision}"${a.overridden ? ' (overrode AI)' : ''}`;
   }
+  if (o.interview_agent) {
+    const k = o.interview_agent;
+    out.interview_agent = `${k.questions?.length ?? 0} questions, ${k.coding_tasks?.length ?? 0} coding tasks (${k.source === 'llm' ? 'AI-generated' : 'template-based'})`;
+  }
+  if (o.email_agent) out.email_agent = `${o.email_agent.template_id}: ${EMAIL_DELIVERY_LABEL[o.email_agent.delivery] || o.email_agent.delivery}`;
   return out;
 }
+
+/** How each delivery outcome is described (never "sent" unless the provider accepted it). */
+export const EMAIL_DELIVERY_LABEL = {
+  sent: 'sent',
+  not_configured: 'not sent (email delivery not configured)',
+};
 
 /** Latest error per agent from the workflow logs. */
 export function latestErrors(logs = []) {

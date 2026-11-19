@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Gavel, RotateCcw, User } from 'lucide-react-native';
+import { Gavel, ListChecks, RotateCcw, User } from 'lucide-react-native';
 import { Badge, Button, Card, CardHeader, ErrorState, InlineAlert, Screen, ScreenHeader, Skeleton, Text } from '../../../../../src/components/ui';
 import { WorkflowTimeline } from '../../../../../src/features/workflows/components/WorkflowTimeline';
 import { AgentDetailSheet } from '../../../../../src/features/workflows/components/AgentDetailSheet';
@@ -107,6 +107,35 @@ export default function WorkflowDetailScreen() {
               AI recommended "{wf.approval.ai_recommendation}"{wf.approval.overridden ? ' — overridden by the recruiter.' : '.'}
             </Text>
             {wf.approval.reason ? <Text className="mt-2">Reason: {wf.approval.reason}</Text> : null}
+          </Card>
+        ) : null}
+
+        {d.state_output?.interview_agent ? (
+          <Button
+            title={`Interview kit (${d.state_output.interview_agent.questions.length} questions)`}
+            icon={ListChecks}
+            onPress={() => router.push(`/dashboard/workflows/${wf.id}/interview`)}
+            testID="open-interview-kit"
+          />
+        ) : null}
+
+        {d.state_output?.email_agent ? (
+          <Card testID="email-card">
+            <CardHeader
+              title="Candidate email"
+              right={
+                <Badge
+                  label={d.state_output.email_agent.delivery === 'sent' ? 'Sent' : 'Not sent'}
+                  tone={d.state_output.email_agent.delivery === 'sent' ? 'success' : 'warning'}
+                />
+              }
+            />
+            <Text className="font-medium">{d.state_output.email_agent.subject}</Text>
+            <Text variant="label" tone="muted" className="mt-1 font-normal">
+              {d.state_output.email_agent.delivery === 'sent'
+                ? `Delivered to ${d.state_output.email_agent.recipient} via Resend.`
+                : 'Email delivery is not configured (RESEND_API_KEY), so this message was generated but not sent. Contact the candidate directly.'}
+            </Text>
           </Card>
         ) : null}
 

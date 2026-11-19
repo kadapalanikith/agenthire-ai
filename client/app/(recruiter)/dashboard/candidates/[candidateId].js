@@ -1,6 +1,6 @@
 import { Pressable, RefreshControl, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, FileText, Gavel, GitBranch, Mail, Phone } from 'lucide-react-native';
+import { ChevronRight, FileText, Gavel, GitBranch, ListChecks, Mail, Phone } from 'lucide-react-native';
 import { Button, Card, CardHeader, ErrorState, InlineAlert, Screen, ScreenHeader, Skeleton, Text } from '../../../../src/components/ui';
 import { CandidateStatusBadge } from '../../../../src/features/candidates/components/CandidateCard';
 import { ScreeningCard } from '../../../../src/features/candidates/components/ScreeningCard';
@@ -111,6 +111,14 @@ export default function CandidateDetailScreen() {
                 icon={Gavel}
                 onPress={() => router.push(`/dashboard/workflows/${c.workflow.id}/approval`)}
                 testID="candidate-decide"
+              />
+            ) : null}
+            {c.screening?.interview ? (
+              <Button
+                title="Interview kit"
+                icon={ListChecks}
+                onPress={() => router.push(`/dashboard/workflows/${c.workflow.id}/interview`)}
+                testID="candidate-interview-kit"
               />
             ) : null}
             <Button
