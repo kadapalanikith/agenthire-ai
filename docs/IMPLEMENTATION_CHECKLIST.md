@@ -190,7 +190,28 @@ _Last updated: 2026-11-19, end of Phase 7._
 - ✅ Web export, Android export, expo-doctor 20/20
 - ✅ **Live outage test**: Qdrant container stopped during an application → embedding retried on the spec schedule (5 s) and failed after 4 attempts with `VECTOR_DB_TIMEOUT` → Qdrant restarted → `POST /workflow/retry` → continued from the embedding step (parser not re-run) → paused at approval
 - ✅ **Live approval test**: override without a reason rejected (400), approve accepted (202), second approve 409; resumed from the checkpoint without re-running earlier agents; candidate `approved`; stopped at the Phase 7 interview agent with `NOT_IMPLEMENTED`; 5 failure-log entries written
-- 🟡 Approved and rejected workflows end `failed` at `interview_agent` / `email_agent` until Phase 7. Retrying them after Phase 7 continues from that node
-## Phase 7: Interview generation and email ⬜
+- ✅ (Resolved in Phase 7) Approved and rejected workflows now complete; earlier ones stopped at `NOT_IMPLEMENTED` were completed by retry
+
+## Phase 7: Interview generation and email ✅
+**Specs**
+- ✅ `interview-agent` v1.1.0: failure policy, question types, coding task time box, RAG source (interview guidelines), rule-based fallback templates with rubric coverage check
+- ✅ `retry-policy` v1.2.0: `EMAIL_CONFIG_ERROR` non-retryable
+
+**Server**
+- ✅ Interview Agent: LLM kit validated against the spec (counts, types, exact rubric levels) with provider fallback; guidelines retrieved from Qdrant; no name, contact or education history in the prompt; fairness screen removes protected-characteristic questions (technical phrases exempt); spec time box enforced; template-based fallback without an LLM
+- ✅ Email Agent: only after a human decision; template from the workflow branch (invite / rejection) and `specs/email/*`; Resend delivery with idempotency key; `not_configured` when no key (never reported as sent); masked recipient; Resend errors split into retryable and non-retryable
+- ✅ Workflows complete (`completed`); candidate screening includes the interview kit and email result
+
+**Client**
+- ✅ Interview kit screen: questions with type and skill, expandable rubrics, coding tasks with time box and rubric, focus areas, source (AI-generated / template-based), fairness removals, guideline sources
+- ✅ Workflow detail: interview kit link, email card ("Sent" only when the provider accepted it, otherwise "Not sent" with the reason); timeline summaries and agent sheet fields for both agents
+- ✅ Candidate detail: interview kit link
+
+**Tests and checks (Phase 7)**
+- ✅ Server: 207/207 (16 new: rule-based and LLM kits, guideline injection, prompt privacy, fairness removal, word boundaries and technical exceptions, invalid kits with provider fallback, spec time box; invite/rejection selection, idempotency key, not_configured, no email without a decision, Resend error classes; full seven-agent completion with a sent invite, transient email retry, config error without retries keeping the decision, Phase 6 → 7 retry upgrade, rejection path)
+- ✅ Client: 78/78 (5 new)
+- ✅ Web export, Android export, expo-doctor 20/20
+- ✅ **Live**: the Phase 6 workflow left at `interview_agent` was retried → Groq generated 8 questions and 2 coding tasks grounded in the interview guidelines (one attempt hit Groq invalid JSON + OpenRouter timeout and was retried automatically) → invite generated (`not_configured`) → `completed`, candidate stays `approved`. The Phase 5 workflow was rejected with an override reason → interview skipped → rejection generated → `completed`
+- 🟡 Real email delivery not verified: `RESEND_API_KEY` is not set. With Resend's test sender `onboarding@resend.dev`, Resend only delivers to the account owner's address; other recipients return a validation error, which is reported as `EMAIL_CONFIG_ERROR`
 ## Phase 8: Analytics, notifications, UI refinement ⬜
 ## Phase 9: Security, testing, optimisation, deployment ⬜
