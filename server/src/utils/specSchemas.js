@@ -167,16 +167,33 @@ const shortlistingRulesSpec = z
   });
 
 const chunking = z.object({ chunk_size: z.number().int().min(50).max(8000), chunk_overlap: z.number().int().min(0) });
-const ragRetrievalSpec = z.object({
-  _meta: meta,
-  embedding_model: z.string().min(1),
-  vector_size: z.number().int().positive(),
-  distance: z.enum(['Cosine', 'Dot', 'Euclid']),
-  chunking: z.object({ resume: chunking, policy: chunking }),
-  retrieval: z.object({ top_k: z.number().int().min(1).max(50), minimum_similarity: z.number().min(0).max(1) }),
-  collections: z.object({ resumes: z.string().min(1), knowledge: z.string().min(1) }),
-  knowledge_doc_types: z.array(z.string().min(1)).min(1),
-});
+const ragRetrievalSpec = z
+  .object({
+    _meta: meta,
+    embedding_model: z.string().min(1),
+    vector_size: z.number().int().positive(),
+    distance: z.enum(['Cosine', 'Dot', 'Euclid']),
+    query_instruction: z.string(),
+    chunking: z.object({ resume: chunking, policy: chunking }),
+    retrieval: z.object({ top_k: z.number().int().min(1).max(50), minimum_similarity: z.number().min(0).max(1) }),
+    collections: z.object({ resumes: z.string().min(1), knowledge: z.string().min(1) }),
+    knowledge_doc_types: z.array(z.string().min(1)).min(1),
+    knowledge_sources: z
+      .array(z.object({ dir: z.string().regex(/^knowledge\/[a-z0-9-]+$/), doc_type: z.string().min(1) }))
+      .min(1),
+  })
+  .superRefine((spec, ctx) => {
+    for (const c of ['resume', 'policy']) {
+      if (spec.chunking[c].chunk_overlap >= spec.chunking[c].chunk_size) {
+        ctx.addIssue({ code: 'custom', path: ['chunking', c, 'chunk_overlap'], message: 'overlap must be smaller than chunk_size' });
+      }
+    }
+    for (const [i, src] of spec.knowledge_sources.entries()) {
+      if (!spec.knowledge_doc_types.includes(src.doc_type)) {
+        ctx.addIssue({ code: 'custom', path: ['knowledge_sources', i, 'doc_type'], message: `unknown doc_type ${src.doc_type}` });
+      }
+    }
+  });
 
 const fairnessPolicySpec = z.object({
   _meta: meta,
@@ -188,24 +205,42 @@ const fairnessPolicySpec = z.object({
 });
 
 const temperature = z.number().min(0).max(2);
+const llmFailurePolicy = z.enum(['fail', 'deterministic_fallback']);
+
 const resumeParserPrompt = z.object({
   _meta: meta,
   temperature,
   max_resume_chars: z.number().int().positive(),
+  min_text_chars: z.number().int().min(1),
+  llm_failure_policy: llmFailurePolicy,
+  redact_before_llm: z.array(z.enum(['email', 'phone', 'url'])),
   system_prompt: z.string().min(20),
   known_skills: skillList.min(1),
+  skill_aliases: z.record(z.string().regex(/^[a-z0-9.+#-]+$/, 'alias keys must be lowercase'), z.string().min(1)),
   output_schema: z.record(z.string(), z.unknown()),
 });
 
 const matchingAgentPrompt = z.object({
   _meta: meta,
   temperature,
+  llm_failure_policy: llmFailurePolicy,
   weights: z
     .object({ required_skills: z.number().min(0), preferred_skills: z.number().min(0), experience: z.number().min(0) })
     .refine((w) => Math.abs(w.required_skills + w.preferred_skills + w.experience - 1) < 1e-9, {
       message: 'weights must sum to 1',
     }),
   experience_scoring: z.enum(['linear_to_minimum']),
+  evidence: z.object({
+    require_verbatim_quote: z.boolean(),
+    min_quote_chars: z.number().int().min(1),
+    max_quote_chars: z.number().int().min(10),
+  }),
+  rag: z.object({
+    knowledge_doc_types: z.array(z.string().min(1)).min(1),
+    knowledge_query_template: z.string().includes('{role}'),
+    resume_query_template: z.string().includes('{skill}'),
+    max_resume_queries: z.number().int().min(0).max(50),
+  }),
   system_prompt: z.string().min(20),
   output_fields: z.array(z.string().min(1)).min(1),
 });
