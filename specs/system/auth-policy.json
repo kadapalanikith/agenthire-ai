@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "id": "auth-policy",
+    "version": "1.0.0",
+    "provenance": "ADDENDUM sections 4 and 7 (forgot password, secure auth); values INFERRED"
+  },
+  "password": {
+    "min_length": 8,
+    "max_length": 128,
+    "require_letter": true,
+    "require_number": true
+  },
+  "bcrypt_rounds": 12,
+  "password_reset": {
+    "token_ttl_minutes": 30
+  },
+  "signup_default_role": "recruiter",
+  "rate_limits": {
+    "auth": { "window_ms": 900000, "max": 20 },
+    "password_reset": { "window_ms": 3600000, "max": 5 },
+    "general": { "window_ms": 60000, "max": 300 }
+  }
+}

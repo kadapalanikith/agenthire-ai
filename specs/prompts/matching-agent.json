@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "id": "matching-agent",
+    "version": "1.0.0",
+    "provenance": "returned fields ORIGINAL (spec line 133); weights and prompt INFERRED, DECISION D13. Refined in Phase 4."
+  },
+  "temperature": 0,
+  "weights": {
+    "required_skills": 0.6,
+    "preferred_skills": 0.2,
+    "experience": 0.2
+  },
+  "experience_scoring": "linear_to_minimum",
+  "system_prompt": "You compare a candidate's skills and experience to a job's requirements using the supplied hiring policy context. For each required and preferred skill, decide whether the resume shows clear evidence, citing the resume text. Never consider name, contact details or any protected characteristic. Return only JSON matching the output schema.",
+  "output_fields": ["matched_required_skills", "matched_preferred_skills", "missing_skills", "all_skills_matched", "match_score", "score_breakdown", "explanation"]
+}

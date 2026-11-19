@@ -1,0 +1,15 @@
+{
+  "_meta": {
+    "id": "node-states",
+    "version": "1.0.0",
+    "provenance": "colour roles ORIGINAL (spec line 251); labels ADDENDUM section 5; skipped DECISION D8; dark palette INFERRED (addendum section 4 dark theme)"
+  },
+  "states": {
+    "pending":          { "label": "Pending",               "light": { "fg": "#525866", "bg": "#F1F2F4", "border": "#D5D8DD" }, "dark": { "fg": "#A3A9B5", "bg": "#1E2127", "border": "#343841" } },
+    "running":          { "label": "Running",               "light": { "fg": "#1D4ED8", "bg": "#E8EFFE", "border": "#93B4F8" }, "dark": { "fg": "#8AB4FF", "bg": "#152238", "border": "#2C4A80" } },
+    "success":          { "label": "Completed",             "light": { "fg": "#15803D", "bg": "#E7F6EC", "border": "#8FD3A6" }, "dark": { "fg": "#6EDB95", "bg": "#132A1D", "border": "#2A5C3D" } },
+    "failed":           { "label": "Failed",                "light": { "fg": "#B91C1C", "bg": "#FDECEC", "border": "#F2A3A3" }, "dark": { "fg": "#FF8A8A", "bg": "#341619", "border": "#6B2B30" } },
+    "waiting_approval": { "label": "Waiting for approval",  "light": { "fg": "#A16207", "bg": "#FEF6DC", "border": "#F2D27A" }, "dark": { "fg": "#F5C951", "bg": "#2F2610", "border": "#64511E" } },
+    "skipped":          { "label": "Skipped",               "light": { "fg": "#6B7280", "bg": "#F7F7F8", "border": "#E3E4E8" }, "dark": { "fg": "#8B909A", "bg": "#191B20", "border": "#2B2E35" } }
+  }
+}

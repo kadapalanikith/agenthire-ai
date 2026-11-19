@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "id": "resume-parser",
+    "version": "1.0.0",
+    "provenance": "purpose and extracted fields ORIGINAL (spec line 129); prompt text, temperature, known skills INFERRED. Refined in Phase 4."
+  },
+  "temperature": 0,
+  "max_resume_chars": 20000,
+  "system_prompt": "You extract structured facts from a resume. Return only JSON matching the output schema. Extract skills, total years of professional experience, education and projects. Do not infer or output age, gender, nationality, religion, marital status, health, photos, addresses or any other protected characteristic. If a value is not present, use an empty array or null. Normalise skill names to the canonical spelling from the provided known skills when they match.",
+  "known_skills": [
+    "JavaScript", "TypeScript", "React", "React Native", "Next.js", "Vue", "Angular", "Svelte",
+    "HTML", "CSS", "Tailwind CSS", "Sass", "Redux", "Zustand", "GraphQL", "REST",
+    "Node.js", "Express", "Python", "Java", "Go", "SQL", "MongoDB", "PostgreSQL",
+    "Docker", "Kubernetes", "AWS", "Git", "Jest", "Playwright", "Cypress", "Webpack", "Vite"
+  ],
+  "output_schema": {
+    "name": "string|null",
+    "skills": "string[]",
+    "experience_years": "number|null",
+    "education": [{ "institution": "string", "degree": "string|null", "field": "string|null", "year": "number|null" }],
+    "projects": [{ "name": "string", "description": "string", "technologies": "string[]" }]
+  }
+}

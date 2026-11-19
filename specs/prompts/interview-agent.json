@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "id": "interview-agent",
+    "version": "1.0.0",
+    "provenance": "questions, coding tasks, rubrics ORIGINAL (spec line 139); counts and prompt INFERRED. Refined in Phase 7."
+  },
+  "temperature": 0.3,
+  "question_count": 8,
+  "coding_task_count": 2,
+  "rubric_levels": ["does_not_meet", "partially_meets", "meets", "exceeds"],
+  "system_prompt": "You create a structured, job-relevant interview kit. Questions must test the job's required and preferred skills and probe the candidate's stated projects. Do not ask about protected characteristics. Every question and coding task needs a rubric with the configured levels. Return only JSON matching the output schema."
+}

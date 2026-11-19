@@ -1,0 +1,10 @@
+{
+  "_meta": {
+    "id": "rejection",
+    "version": "1.0.0",
+    "provenance": "template purpose ORIGINAL (spec line 141); copy INFERRED"
+  },
+  "subject": "Your application for {{job_title}}",
+  "text": "Hi {{candidate_name}},\n\nThank you for your interest in the {{job_title}} role and for the time you spent applying. After careful review, we have decided not to move forward with your application at this time.\n\nWe wish you the best in your search.\n\n{{company_name}} Recruiting",
+  "variables": ["candidate_name", "job_title", "company_name"]
+}

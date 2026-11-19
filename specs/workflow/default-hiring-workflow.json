@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "id": "default-hiring-workflow",
+    "version": "1.0.0",
+    "provenance": "workflow array ORIGINAL (spec lines 268-269); remaining keys INFERRED/DECISION, see docs/SPEC_RECONSTRUCTION.md section 2"
+  },
+  "workflow": [
+    "resume_parser",
+    "embedding_agent",
+    "matching_agent",
+    "shortlisting_agent",
+    "human_approval",
+    "interview_agent",
+    "email_agent"
+  ],
+  "checkpoint_nodes": ["human_approval"],
+  "branches": {
+    "human_approval": {
+      "approve": { "next": "interview_agent", "email_template": "interview-invite" },
+      "reject": { "next": "email_agent", "skip": ["interview_agent"], "email_template": "rejection" }
+    }
+  },
+  "retry_policy_ref": "system/retry-policy",
+  "node_states_ref": "workflow/node-states"
+}

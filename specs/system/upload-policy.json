@@ -1,0 +1,13 @@
+{
+  "_meta": {
+    "id": "upload-policy",
+    "version": "1.0.0",
+    "provenance": "ADDENDUM section 7 (PDF validation, upload size restrictions); size value INFERRED"
+  },
+  "resume": {
+    "allowed_mime_types": ["application/pdf"],
+    "allowed_extensions": [".pdf"],
+    "max_size_bytes": 5242880,
+    "require_pdf_signature": true
+  }
+}

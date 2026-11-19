@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "id": "frontend-developer",
+    "version": "1.0.0",
+    "provenance": "ORIGINAL (AGENTHIRE_SPEC.md lines 264-265)"
+  },
+  "role": "Frontend Developer",
+  "required_skills": ["React", "JavaScript", "CSS"],
+  "preferred_skills": ["Next.js", "Tailwind CSS"],
+  "minimum_score": 75,
+  "interview_rounds": 2
+}

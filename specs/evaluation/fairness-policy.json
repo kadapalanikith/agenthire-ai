@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "id": "fairness-policy",
+    "version": "1.0.0",
+    "provenance": "ADDENDUM section 7 (explainability, no protected characteristics, human override)"
+  },
+  "excluded_attributes": [
+    "age", "date_of_birth", "gender", "sex", "marital_status", "religion", "ethnicity", "race",
+    "nationality", "citizenship", "disability", "health", "sexual_orientation", "pregnancy",
+    "photo", "home_address", "political_affiliation"
+  ],
+  "never_send_to_scoring_prompts": ["name", "email", "phone"],
+  "decision_inputs_allowed": ["skills", "experience_years", "education", "projects"],
+  "auto_final_decisions": false,
+  "override_reason_min_length": 10
+}

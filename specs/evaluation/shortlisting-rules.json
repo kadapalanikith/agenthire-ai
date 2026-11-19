@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "id": "shortlisting-rules",
+    "version": "1.0.0",
+    "provenance": "bands ORIGINAL (spec line 135); role_minimum_score_policy DECISION D7 (docs/ARCHITECTURE.md section 5)"
+  },
+  "score_range": { "min": 0, "max": 100 },
+  "bands": [
+    { "decision": "shortlisted", "min_score": 80 },
+    { "decision": "hold", "min_score": 60 },
+    { "decision": "rejected", "min_score": 0 }
+  ],
+  "role_minimum_score_policy": {
+    "mode": "stricter_only",
+    "applies_to": "shortlisted",
+    "description": "effective shortlisted min_score = max(band.min_score, hiring spec minimum_score). A role minimum can raise but never lower a threshold and never changes the hold or rejected bands."
+  },
+  "recommendation_only": true,
+  "requires_human_approval": true,
+  "override_requires_reason": true
+}

@@ -1,0 +1,10 @@
+{
+  "_meta": {
+    "id": "interview-invite",
+    "version": "1.0.0",
+    "provenance": "template purpose ORIGINAL (spec line 141); copy INFERRED"
+  },
+  "subject": "Interview invitation: {{job_title}}",
+  "text": "Hi {{candidate_name}},\n\nThank you for applying for the {{job_title}} role. We would like to invite you to an interview. Our recruiting team will contact you shortly to schedule a time.\n\nBest regards,\n{{company_name}} Recruiting",
+  "variables": ["candidate_name", "job_title", "company_name"]
+}
