@@ -21,11 +21,17 @@ function build({ window_ms: windowMs, max }) {
  * tests shrink windows; production always uses the spec values.
  */
 function createRateLimiters(overrides = {}) {
-  const limits = { ...getSpec('system/auth-policy').rate_limits, ...overrides };
+  const limits = {
+    ...getSpec('system/auth-policy').rate_limits,
+    ...getSpec('system/upload-policy').rate_limits,
+    ...overrides,
+  };
   return {
     general: build(limits.general),
     auth: build(limits.auth),
     passwordReset: build(limits.password_reset),
+    applicationUpload: build(limits.application_upload),
+    applicationStatus: build(limits.application_status),
   };
 }
 

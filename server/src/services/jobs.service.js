@@ -1,6 +1,7 @@
 'use strict';
 
 const Job = require('../models/Job');
+const Candidate = require('../models/Candidate');
 const { getEnv } = require('../config/env');
 const { getHiringSpec, getSpec } = require('../utils/specLoader');
 const { AppError } = require('../utils/AppError');
@@ -114,7 +115,9 @@ async function findJobOr404(id) {
 /** Owners and admins get the full record; everyone else gets the public view. */
 async function getJob(id, user) {
   const job = await findJobOr404(id);
-  return canManage(job, user) ? { job: toOwnerView(job), can_manage: true } : { job: toPublicView(job), can_manage: false };
+  if (!canManage(job, user)) return { job: toPublicView(job), can_manage: false };
+  const candidateCount = await Candidate.countDocuments({ job_id: job._id });
+  return { job: { ...toOwnerView(job), candidate_count: candidateCount }, can_manage: true };
 }
 
 async function updateJob(id, user, input) {

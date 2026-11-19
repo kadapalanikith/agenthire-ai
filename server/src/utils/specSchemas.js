@@ -105,6 +105,8 @@ const retryPolicySpec = z.object({
   non_retryable_errors: z.array(z.string().min(1)).min(1),
 });
 
+const rateLimit = z.object({ window_ms: z.number().int().positive(), max: z.number().int().positive() });
+
 const uploadPolicySpec = z.object({
   _meta: meta,
   resume: z.object({
@@ -113,9 +115,9 @@ const uploadPolicySpec = z.object({
     max_size_bytes: z.number().int().positive().max(50 * 1024 * 1024),
     require_pdf_signature: z.boolean(),
   }),
+  rate_limits: z.object({ application_upload: rateLimit, application_status: rateLimit }),
+  resume_access_link_ttl_seconds: z.number().int().min(30).max(3600),
 });
-
-const rateLimit = z.object({ window_ms: z.number().int().positive(), max: z.number().int().positive() });
 const authPolicySpec = z.object({
   _meta: meta,
   password: z

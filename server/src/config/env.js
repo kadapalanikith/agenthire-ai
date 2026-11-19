@@ -48,6 +48,9 @@ const envSchema = z.object({
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: z.string().trim().default('AgentHire <onboarding@resend.dev>'),
 
+  // Where resume PDFs are stored. Defaults to server/uploads (spec requirement).
+  UPLOAD_DIR: z.string().trim().default(path.resolve(__dirname, '../../uploads')),
+
   EXPO_ACCESS_TOKEN: optionalString,
   WORKFLOW_CONCURRENCY: z.coerce.number().int().min(1).max(20).default(2),
 });

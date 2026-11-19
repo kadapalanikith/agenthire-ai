@@ -39,4 +39,15 @@ function getHiringSpecs() {
   });
 }
 
-module.exports = { getWorkflowSpec, getAuthPolicy, getHiringSpecs };
+/** Public upload rules so the apply form validates files before uploading. */
+function getUploadPolicy() {
+  const policy = getSpec('system/upload-policy');
+  return {
+    version: policy._meta.version,
+    max_size_bytes: policy.resume.max_size_bytes,
+    allowed_mime_types: policy.resume.allowed_mime_types,
+    allowed_extensions: policy.resume.allowed_extensions,
+  };
+}
+
+module.exports = { getWorkflowSpec, getAuthPolicy, getHiringSpecs, getUploadPolicy };

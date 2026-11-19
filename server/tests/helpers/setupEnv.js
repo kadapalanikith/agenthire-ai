@@ -9,6 +9,11 @@ process.env.CORS_ORIGINS = 'http://localhost:8081';
 process.env.PUBLIC_WEB_URL = 'http://localhost:8081';
 // Unreachable port so health checks deterministically report Qdrant as down.
 process.env.QDRANT_URL = 'http://127.0.0.1:9';
+// Per-worker temporary upload directory (removed by the OS temp cleaner).
+process.env.UPLOAD_DIR = require('node:path').join(
+  require('node:os').tmpdir(),
+  `agenthire-test-uploads-${process.pid}-${process.env.JEST_WORKER_ID || 0}`
+);
 delete process.env.RESEND_API_KEY;
 delete process.env.GROQ_API_KEY;
 delete process.env.OPENROUTER_API_KEY;

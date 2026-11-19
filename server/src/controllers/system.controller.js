@@ -17,4 +17,8 @@ async function authPolicy(_req, res) {
   return sendSuccess(res, metaService.getAuthPolicy());
 }
 
-module.exports = { health, workflowSpec, authPolicy };
+async function uploadPolicy(_req, res) {
+  return sendSuccess(res, metaService.getUploadPolicy());
+}
+
+module.exports = { health, workflowSpec, authPolicy, uploadPolicy };
