@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Server runtime data
+server/uploads/*
+!server/uploads/.gitkeep
+server/logs/*
+!server/logs/.gitkeep
+server/.cache/
+coverage/
+
+# Expo / React Native
+client/.expo/
+client/dist/
+client/web-build/
+client/ios/
+client/android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+client/playwright-report/
+client/test-results/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
