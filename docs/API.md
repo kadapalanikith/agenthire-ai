@@ -229,7 +229,55 @@ Streams the PDF (`Content-Type: application/pdf`, `Content-Disposition: inline`,
 
 ---
 
+## Phase 5 endpoints (implemented)
+
+Workflows start **automatically** when `POST /candidates/upload` succeeds. The LangGraph run executes
+`resume_parser → embedding_agent → matching_agent → shortlisting_agent` and pauses at `human_approval`
+(`status: waiting_approval`).
+
+Additional error codes: `WORKFLOW_STATE_CONFLICT` (409), `SERVICE_UNAVAILABLE` (503).
+
+### GET /workflow — recruiter
+Query: `status?` (`pending | running | waiting_approval | completed | failed`), `job_id?`, `page`, `limit`.
+Owner-scoped (admins: all). Item:
+```json
+{ "id": "…", "status": "waiting_approval", "current_state": "human_approval", "retry_count": 0, "last_error": null,
+  "nodes": [ { "name": "resume_parser", "status": "success" }, "… 7 entries in execution order" ],
+  "candidate": { "id": "…", "name": "John Carter", "match_score": 100, "ai_recommendation": "shortlisted", "status": "awaiting_review" },
+  "job": { "id": "…", "title": "Frontend Developer" }, "created_at": "…", "updated_at": "…" }
+```
+
+### GET /workflow/:id — recruiter (owner or admin)
+```json
+{ "workflow": { "id", "status", "current_state", "retry_count", "last_error", "approval", "spec_versions", "created_at", "updated_at" },
+  "execution_order": ["resume_parser", "…"],
+  "nodes": [ { "name": "resume_parser", "index": 0, "status": "success", "attempts": 1,
+               "started_at": "…", "completed_at": "…", "duration_ms": 2334 } ],
+  "state_output": { "resume_parser": { "parse_source": "llm", "skills": [], "…": "…" },
+                    "matching_agent": { "match_score": 100, "score_breakdown": {}, "evidence": [], "explanation": "…" },
+                    "shortlisting_agent": { "decision": "shortlisted", "applied_band": {}, "thresholds": [], "recommendation_only": true } },
+  "logs": [ { "agent_name": "embedding_agent", "status": "failed", "attempt": 1, "duration_ms": 12,
+              "error": { "code": "VECTOR_DB_TIMEOUT", "message": "…", "retryable": true }, "created_at": "…" } ],
+  "candidate": { "id", "name", "status", "match_score", "ai_recommendation" }, "job": { "id", "title" } }
+```
+`last_error`: `{ agent_name, code, message, retryable, at }`. Stack traces are kept server-side only
+(`server/logs/workflow-failures.log`, `workflow_logs.error.stack` with `select: false`).
+
+### POST /workflow/start — recruiter
+Body `{ "candidate_id" }`. Starts a `pending` workflow (creating one if the candidate has none) →
+`202 { workflow }`. `409 WORKFLOW_STATE_CONFLICT` for any other status (failed runs use retry, Phase 6).
+
+### Changes to existing endpoints
+- `GET /candidates/:id` adds `screening`: `{ parsing: { parse_source, llm }, matching: { match_score,
+  matched_required_skills, matched_preferred_skills, missing_skills, all_skills_matched, score_breakdown,
+  explanation, explanation_source, evidence, rejected_llm_claims, rag_context }, shortlisting: { decision,
+  applied_band, thresholds, role_minimum_score, role_minimum_applied, recommendation_only, spec_version } }`.
+  Each part is `null` until its agent has run.
+- `match_score`, `ai_recommendation` and `parsed_resume_json` on candidates are now filled in by the workflow.
+- Candidate `status` moves `applied → processing → awaiting_review` (or `failed`). Approve/reject arrive in Phase 6.
+
+---
+
 ## Planned endpoints
 
-Contracts are defined in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §7 and will be documented here as each
-phase implements them: workflows (Phases 5–6), analytics and notifications (Phase 8).
+`POST /workflow/approve` and `POST /workflow/retry` (Phase 6); analytics and notifications (Phase 8).

@@ -2,7 +2,7 @@
 
 Legend: ✅ done and tested · 🟡 done, needs follow-up · ⬜ not started
 
-_Last updated: 2026-11-19, end of Phase 4._
+_Last updated: 2026-11-19, end of Phase 5._
 
 ## Phase 0: Repository and specification analysis ✅
 - ✅ Spec read, conflicts identified, architecture approved (`docs/ARCHITECTURE.md`)
@@ -144,7 +144,31 @@ _Last updated: 2026-11-19, end of Phase 4._
 - ✅ Retrieval thresholds split (D19, user-approved): knowledge 0.65, the candidate's own resume 0 (top_k). Live result for a resume that implies JavaScript and CSS without naming them: score 40 → 80 through LLM quotes verified against the resume; the fair-hiring policy now reaches the LLM
 - 🟡 Parser and matching results are not yet saved to candidates; the LangGraph workflow persists them in Phase 5
 - 🟡 Knowledge ingestion replaces chunks per document but does not delete points for documents removed from `specs/knowledge/`
-## Phase 5: LangGraph orchestration and shortlisting ⬜
+## Phase 5: LangGraph orchestration and shortlisting ✅
+**Server**
+- ✅ LangGraph `StateGraph` built from `default-hiring-workflow.json` (node order, linear edges, conditional branch after `human_approval`); the shared `HiringState` is the only way agents communicate
+- ✅ MongoDB checkpointer (`MongoDBSaver`, `thread_id = workflow id`, `checkpoints` / `checkpoint_writes`)
+- ✅ Node lifecycle: per-attempt `workflow_logs` (running → success / failed / waiting_approval / skipped), node states, attempts, durations, `state_output`, and structured failure log (agent, workflow state, stack trace, timestamp) in Mongo and `server/logs/workflow-failures.log`
+- ✅ Retry policy from the spec (`max_retries` 3 → 4 attempts, `retry_delay_ms`, retryable codes)
+- ✅ Runner: atomic claim, bounded concurrency (`WORKFLOW_CONCURRENCY`), outcome projection, failure marking, boot recovery of `running`/`pending` workflows, graceful shutdown
+- ✅ Uploads start the workflow automatically
+- ✅ Shortlisting Agent driven by `shortlisting-rules.json` with the `stricter_only` role minimum and a full threshold trace; recommendation only
+- ✅ Human approval pause via `interrupt()`; decision validation including the override reason rule (wired to an endpoint in Phase 6)
+- ✅ Candidate `parsed_resume_json`, `match_score`, `ai_recommendation` and status updated by the workflow
+- ✅ `GET /workflow`, `GET /workflow/:id`, `POST /workflow/start`; `GET /candidates/:id` adds `screening`
+
+**Client**
+- ✅ Candidate detail screening card: match score, advisory AI recommendation ("You make the final decision"), score breakdown with weights, matched and missing skills, explanation, verified evidence quotes; polls while the workflow runs
+- ✅ Candidates list polls while any listed workflow is active
+
+**Tests and checks (Phase 5)**
+- ✅ Server: 179/179 (24 new: shortlisting bands, stricter_only, a no-hardcoded-thresholds test loading altered spec files, override rules; full automatic run to the approval pause with logs, node states, checkpoints and API projections; low score still waits for a human; transient failure retried; retries exhausted; non-retryable fails immediately; crash recovery resumes from the checkpoint without re-running completed nodes; pending recovery; no double execution; list, detail, start and ownership)
+- ✅ Client: 64/64 (screening card)
+- ✅ Web export, Android export, expo-doctor 20/20
+- ✅ **Live end-to-end** on the real server (Docker MongoDB + Qdrant, Groq): public upload → parser (Groq) → embedding → matching (Groq, three policy chunks) → shortlisting → paused at human approval in 4.7 s; score 100, recommendation "shortlisted", candidate status `awaiting_review`, candidate-facing stage `in_review`
+- ✅ **Restart check**: after killing and restarting the server, the paused workflow, its 5 logs and 6 LangGraph checkpoints were intact, with no node re-run
+- 🟡 Interview and email agents are Phase 7; until approval exists (Phase 6) they cannot be reached
+- 🟡 The workflow runner is in-process: run a single API instance (horizontal scaling needs a shared queue)
 ## Phase 6: Human approval, workflow monitoring, resumability ⬜
 ## Phase 7: Interview generation and email ⬜
 ## Phase 8: Analytics, notifications, UI refinement ⬜
