@@ -160,8 +160,76 @@ Base role specs from `specs/hiring/` for the job form:
 
 ---
 
+## Phase 3 endpoints (implemented)
+
+Additional error codes: `INVALID_FILE_TYPE` (400), `INVALID_PDF` (400, non-retryable),
+`FILE_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `JOB_CLOSED` (409), `ALREADY_APPLIED` (409),
+`RESUME_UNAVAILABLE` (404).
+
+### POST /candidates/upload — public, rate-limited (`upload-policy.rate_limits.application_upload`)
+`multipart/form-data` fields: `job_id`, `name` (2–100), `email`, `phone` (7–15 digits; `+ - ( ) .` and
+spaces allowed), and one file `resume`.
+
+Validation order: content type → file type by MIME **and** extension → size (≤ `max_size_bytes`) →
+text fields (strict) → job exists (404) and is open (409 `JOB_CLOSED`) → file bytes start with `%PDF-`
+and contain `%%EOF` near the end (400 `INVALID_PDF`) → one application per email per job (409
+`ALREADY_APPLIED`). Files are held in memory until they pass validation, then saved under `UPLOAD_DIR`
+(default `server/uploads`) with a random name. If any later step fails, the file and records are removed.
+
+`201`:
+```json
+{ "candidate_id": "…", "status_token": "<64 hex chars, returned once>", "status": "applied", "stage": "received",
+  "job": { "id": "…", "title": "Frontend Developer" },
+  "workflow": { "id": "…", "status": "pending", "current_state": null, "retry_count": 0, "updated_at": "…" } }
+```
+The workflow record is created with the execution order and an all-`pending` node state map from
+`specs/workflow/default-hiring-workflow.json`, plus a snapshot of every spec version. Automatic
+execution is added in Phase 5.
+
+### GET /candidates/status/:statusToken — public, rate-limited (`application_status`)
+```json
+{ "applicant_name": "Jane", "job": { "id": "…", "title": "Frontend Developer" },
+  "stage": "received | in_review | decision_made", "submitted_at": "…", "updated_at": "…" }
+```
+Never returns scores, recommendations, contact details or resume data. Stage mapping:
+`applied → received`; `processing, awaiting_review, failed → in_review`; `approved, rejected → decision_made`.
+
+### GET /candidates — recruiter
+Query: `job_id?`, `status?` (`applied | processing | awaiting_review | approved | rejected | failed`),
+`q?` (name or email, literal), `page`, `limit`. Only candidates for the recruiter's jobs (admins: all);
+a `job_id` the recruiter doesn't own → 404. → `{ candidates: [...] }` with pagination `meta`.
+
+Candidate object: `id, job_id, workflow_id, name, email, phone, resume_file { original_name, size_bytes,
+mime_type, sha256 }, parsed_resume_json, match_score (null until scored), ai_recommendation (null until
+shortlisted), status, created_at, updated_at, job { id, title, status }, workflow { id, status,
+current_state, retry_count, updated_at }`. The storage key and status token hash are never returned.
+
+### GET /candidates/:id — recruiter (owner of the job, or admin)
+→ `{ candidate }`. Other recruiters receive 404.
+
+### GET /candidates/:id/resume-link ➕ — recruiter
+→ `{ "path": "/candidates/<id>/resume?access=<signed token>", "expires_at": "…" }`. The token is valid
+for `upload-policy.resume_access_link_ttl_seconds` (300 s) and for this candidate only. Clients prefix
+the path with their API base URL.
+
+### GET /candidates/:id/resume — recruiter or signed link
+Streams the PDF (`Content-Type: application/pdf`, `Content-Disposition: inline`,
+`Cache-Control: private, no-store`). Authorised by a recruiter token (owner/admin) **or** a valid
+`access` token. Login JWTs are not accepted as `access`. Query strings are not logged.
+
+### GET /meta/upload-policy ➕ — public
+`{ version, max_size_bytes, allowed_mime_types, allowed_extensions }` from `specs/system/upload-policy.json`.
+
+### Changes to existing endpoints
+- `GET /jobs/:id` (owner view) now includes `candidate_count`.
+- `GET /dashboard/summary` now includes
+  `candidates: { total, by_status }` and `workflows: { total, by_status, completion_rate }`, where
+  `completion_rate` is the percentage of completed workflows, with failed ones counted in the
+  denominator, or `null` when there are none.
+
+---
+
 ## Planned endpoints
 
 Contracts are defined in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §7 and will be documented here as each
-phase implements them: candidates and uploads (Phase 3), workflows (Phases 5–6), analytics and
-notifications (Phase 8).
+phase implements them: workflows (Phases 5–6), analytics and notifications (Phase 8).

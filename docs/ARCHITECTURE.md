@@ -182,6 +182,8 @@ the original spec). Pagination: `?page=&limit=` (server-capped).
 | POST /candidates/upload | public, strict rate limit | 3 |
 | GET /candidates/status/:statusToken | public (stage only, never score) | 3 |
 | GET /candidates, GET /candidates/:id, GET /candidates/:id/resume | recruiter, owner-scoped | 3 |
+| GET /candidates/:id/resume-link ➕ (short-lived signed PDF link) | recruiter | 3 |
+| GET /meta/upload-policy ➕ | public | 3 |
 | POST /workflow/start, POST /workflow/retry | recruiter | 5–6 |
 | POST /workflow/approve | recruiter (reason required on override; 409 if not waiting) | 6 |
 | GET /workflow, GET /workflow/:id | recruiter, owner-scoped | 6 |

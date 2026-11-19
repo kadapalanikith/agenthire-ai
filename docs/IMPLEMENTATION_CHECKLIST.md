@@ -2,7 +2,7 @@
 
 Legend: ✅ done and tested · 🟡 done, needs follow-up · ⬜ not started
 
-_Last updated: 2026-11-19, end of Phase 2._
+_Last updated: 2026-11-19, end of Phase 3._
 
 ## Phase 0: Repository and specification analysis ✅
 - ✅ Spec read, conflicts identified, architecture approved (`docs/ARCHITECTURE.md`)
@@ -79,10 +79,39 @@ _Last updated: 2026-11-19, end of Phase 2._
 - ✅ Client: 42/42 (16 new: skill helpers, form schema, jobs list, copy link, filters, offline error, create flow with spec prefill, client and server validation)
 - ✅ Web export, Android export, expo-doctor 20/20
 - ✅ Live smoke test: hiring specs → create → public list → anonymous detail → cross-recruiter edit 403 → close → removed from public list → per-recruiter summary
-- 🟡 The apply link points at the public job page, which is built in Phase 3; until then it opens the app's not-found screen
+- ✅ The apply link now resolves to the public job page (Phase 3)
 - 🟡 Screens are still verified by tests and builds only, not yet viewed on a device or in a browser
 
-## Phase 3: Public candidate applications and PDF uploads ⬜
+## Phase 3: Public candidate applications and PDF uploads ✅
+**Server**
+- ✅ `specs/system/upload-policy.json` v1.1.0: size, types, upload/status rate limits, resume link TTL
+- ✅ Candidate model (spec fields plus `job_id`, `workflow_id`, `resume_file`, `ai_recommendation`, `status_token_hash`); unique index per job and email
+- ✅ Workflow model (status, current_state, execution_order, node_states, state_output, retry_count, approval, spec_versions, last_error, thread_id)
+- ✅ `POST /candidates/upload`: public multipart, in-memory multer bounded by the spec, MIME and extension filter, `%PDF-` signature and `%%EOF` trailer check, strict field validation, open-job check, duplicate check, random file names under `UPLOAD_DIR`, cleanup of partial state on any failure
+- ✅ Pending workflow created per application from the workflow spec, with a spec version snapshot
+- ✅ `GET /candidates/status/:token`: hashed status tokens; stage only, never scores or contact details
+- ✅ `GET /candidates` / `GET /candidates/:id`: owner-scoped (admin: all), job, status and search filters, pagination
+- ✅ Resume access: owner stream, plus short-lived signed links bound to one candidate (login JWTs rejected)
+- ✅ Dashboard summary: candidate and workflow counts, completion rate; job detail candidate count
+- ✅ `GET /meta/upload-policy`
+
+**Client**
+- ✅ Public routes outside the recruiter guard: `/jobs/[jobId]`, `/jobs/[jobId]/apply`, `/applications/[statusToken]`; they work in any browser via the web export
+- ✅ Public job page (open/closed states), apply form (name, email, phone, Document Picker, file name and size, replace/remove), client checks against the server upload policy, processing state, server file/duplicate/closed errors shown in place, AI-assistance notice
+- ✅ Multipart upload on web (`File`) and native (`{ uri, name, type }`); no recruiter token sent from public pages
+- ✅ Confirmation and status page: three-step progress from the real API stage, polling until a decision, copy status link
+- ✅ Recruiter Candidates tab: search, status chips, job filter from job detail, infinite scroll, "Not scored yet" until the matching agent runs
+- ✅ Candidate detail: contact, job link, resume (in-app browser on native; new tab on web), honest "queued" screening state
+- ✅ Job detail: candidate count, View candidates, Public page; dashboard: open jobs, candidates, workflows, completion and a needs-review banner
+
+**Tests and checks (Phase 3)**
+- ✅ Server: 110/110 (24 new: upload happy path, disguised and truncated PDFs, type, size, missing file, field validation, operator injection, unknown/closed job, duplicates, multipart requirement, rate limit, status privacy and stage mapping, scoping, admin, resume streaming, signed links, dashboard counts, upload policy)
+- ✅ Client: 63/63 (21 new: file and form validation, multipart body, public job, apply flow, client and server errors, status page, candidates list and filters, candidate detail, resume link)
+- ✅ Web export, Android export, expo-doctor 20/20
+- ✅ Live smoke test with browser-style `FormData` + `Blob` upload: 201 with CORS, fake PDF 400, duplicate 409, public status, recruiter list, signed-link download byte-identical, unauthenticated resume 401, dashboard counts, closed job 409, exactly one stored file
+- 🟡 Workflows stay `pending` until LangGraph execution is wired up in Phase 5 (shown honestly as "Queued")
+- 🟡 Universal/App Links (https links opening the native app) need a hosted domain plus `apple-app-site-association` / `assetlinks.json` (Phase 9). Today https links open the web page and `agenthire://` links open the app
+- 🟡 Scanned or image-only PDFs pass the structural check; text extraction and its errors come with the resume parser (Phase 4)
 ## Phase 4: Resume parsing, embeddings, RAG, matching ⬜
 ## Phase 5: LangGraph orchestration and shortlisting ⬜
 ## Phase 6: Human approval, workflow monitoring, resumability ⬜

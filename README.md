@@ -25,8 +25,8 @@ docs/     Architecture, API reference, implementation checklist
 
 ## Status
 
-Phase 1 (foundation and authentication) and Phase 2 (recruiter dashboard and job management) are
-complete. See
+Phases 1–3 are complete: foundation and authentication, recruiter dashboard and job management, and
+public candidate applications with PDF uploads. See
 [`docs/IMPLEMENTATION_CHECKLIST.md`](./docs/IMPLEMENTATION_CHECKLIST.md).
 
 ## Getting started
