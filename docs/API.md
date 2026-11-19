@@ -292,7 +292,7 @@ Body: `{ "workflow_id", "decision": "approve" | "reject", "reason"? }`.
 - The graph resumes **from its checkpoint** (earlier nodes are not re-run). Approve → `interview_agent`;
   reject → `interview_agent` is marked `skipped` and the run continues to `email_agent`. Candidate status
   becomes `approved` / `rejected`. Later failures never change it.
-- Until Phase 7, the next node fails with `NOT_IMPLEMENTED` (workflow `failed`); a Phase 7 retry continues from there.
+- Since Phase 7 the run continues to the interview and email agents and ends `completed`.
 
 ### POST /workflow/retry — recruiter (owner or admin)
 Body `{ "workflow_id" }`. Only for `status: failed` (else `409`). Increments `retry_count`, clears
@@ -307,6 +307,35 @@ completed nodes are not repeated. → `202 { workflow }`.
 - `GET /meta/workflow-spec` adds `node_labels` (display names) and
   `approval_rules: { override_requires_reason, override_reason_min_length }`.
 - Human approval counts as one attempt even though LangGraph re-enters it on resume.
+
+---
+
+## Phase 7 (implemented, no new endpoints)
+
+After an **approve** decision the workflow runs `interview_agent → email_agent`; after **reject** it
+records `interview_agent` as `skipped` and runs `email_agent`. The workflow ends `completed`. Additional
+error code in workflow errors: `EMAIL_CONFIG_ERROR` (non-retryable: bad key, unverified sender, invalid
+request); `EMAIL_API_FAILURE` stays retryable.
+
+`GET /workflow/:id` → `state_output.interview_agent`:
+```json
+{ "questions": [ { "id": "q1", "question": "…", "type": "experience | situational | technical", "skill": "React",
+                   "rubric": { "does_not_meet": "…", "partially_meets": "…", "meets": "…", "exceeds": "…" } } ],
+  "coding_tasks": [ { "id": "t1", "title": "…", "prompt": "…", "skills": ["React"], "time_minutes": 45, "rubric": { } } ],
+  "focus_areas": ["…"], "interview_rounds": 2, "rubric_levels": ["does_not_meet", "partially_meets", "meets", "exceeds"],
+  "source": "llm | deterministic_fallback", "llm": { "provider": "groq", "model": "…" },
+  "guidelines": [ { "doc_type": "interview_guideline", "doc_path": "…", "chunk_index": 0, "score": 0.735 } ],
+  "removed_questions": [ { "question": "…", "reason": "mentions a protected characteristic" } ], "spec_version": "1.1.0" }
+```
+`state_output.email_agent`:
+```json
+{ "decision": "approve", "template_id": "interview-invite | rejection", "template_version": "1.0.0",
+  "subject": "Interview invitation: Frontend Developer", "delivery": "sent | not_configured",
+  "provider_id": "re_… | null", "recipient": "j***@example.com", "sent_at": "… | null",
+  "idempotency_key": "agenthire-<workflowId>-interview-invite" }
+```
+The candidate's address is never stored in workflow output (masked). `GET /candidates/:id` →
+`screening.interview` and `screening.email` mirror these.
 
 ---
 
