@@ -65,7 +65,7 @@ export function JobStats() {
       {candidates.by_status.awaiting_review > 0 ? (
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/dashboard/candidates')}
+          onPress={() => router.push('/dashboard/workflows?status=waiting_approval')}
           className="flex-row items-center justify-between rounded-2xl border border-warning/30 bg-warning-muted p-4"
           testID="needs-review-banner"
         >

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Briefcase, LayoutDashboard, Settings, Users } from 'lucide-react-native';
+import { Briefcase, GitBranch, LayoutDashboard, Settings, Users } from 'lucide-react-native';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 
 export default function DashboardTabsLayout() {
@@ -26,6 +26,10 @@ export default function DashboardTabsLayout() {
       <Tabs.Screen
         name="candidates"
         options={{ title: 'Candidates', tabBarIcon: ({ color, size }) => <Users color={color} size={size - 2} /> }}
+      />
+      <Tabs.Screen
+        name="workflows"
+        options={{ title: 'Workflows', tabBarIcon: ({ color, size }) => <GitBranch color={color} size={size - 2} /> }}
       />
       <Tabs.Screen
         name="settings"
