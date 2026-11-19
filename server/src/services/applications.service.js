@@ -12,6 +12,7 @@ const { assertPdfBuffer } = require('../utils/pdfValidation');
 const storage = require('./storage.service');
 const { createPendingWorkflow, summarizeWorkflow } = require('./workflow.service');
 const { logger } = require('../utils/logger');
+const { getWorkflowRunner } = require('../workflows/runner');
 
 function hashToken(raw) {
   return crypto.createHash('sha256').update(raw).digest('hex');
@@ -72,6 +73,13 @@ async function submitApplication({ fields, file }) {
     });
     candidate.workflow_id = workflow._id;
     await candidate.save();
+
+    // Uploads always start the workflow automatically (no recruiter action).
+    // If the engine is not initialised the workflow stays `pending` and is
+    // started by boot recovery.
+    const runner = getWorkflowRunner();
+    if (runner) runner.enqueue(workflow._id);
+    else logger.warn({ workflow_id: String(workflow._id) }, 'Workflow runner not initialised; workflow left pending');
 
     return {
       candidate_id: String(candidate._id),

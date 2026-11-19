@@ -88,10 +88,46 @@ async function loadAccessibleCandidate(id, user) {
   return { candidate, job };
 }
 
+/** Explainable screening results stored by the workflow (null until each agent has run). */
+function screeningFrom(workflow) {
+  const out = workflow?.toJSON().state_output || {};
+  const m = out.matching_agent;
+  const s = out.shortlisting_agent;
+  return {
+    matching: m
+      ? {
+          match_score: m.match_score,
+          matched_required_skills: m.matched_required_skills,
+          matched_preferred_skills: m.matched_preferred_skills,
+          missing_skills: m.missing_skills,
+          all_skills_matched: m.all_skills_matched,
+          score_breakdown: m.score_breakdown,
+          explanation: m.explanation,
+          explanation_source: m.explanation_source,
+          evidence: m.evidence,
+          rejected_llm_claims: m.rejected_llm_claims,
+          rag_context: m.rag_context,
+        }
+      : null,
+    shortlisting: s
+      ? {
+          decision: s.decision,
+          applied_band: s.applied_band,
+          thresholds: s.thresholds,
+          role_minimum_score: s.role_minimum_score,
+          role_minimum_applied: s.role_minimum_applied,
+          recommendation_only: s.recommendation_only,
+          spec_version: s.spec_version,
+        }
+      : null,
+    parsing: out.resume_parser ? { parse_source: out.resume_parser.parse_source, llm: out.resume_parser.llm } : null,
+  };
+}
+
 async function getCandidate(id, user) {
   const { candidate, job } = await loadAccessibleCandidate(id, user);
   const workflow = candidate.workflow_id ? await Workflow.findById(candidate.workflow_id) : null;
-  return toCandidateView(candidate, job, workflow);
+  return { ...toCandidateView(candidate, job, workflow), screening: screeningFrom(workflow) };
 }
 
 /**

@@ -12,21 +12,28 @@ async function main() {
 
   await connectDatabase(env.MONGODB_URI);
 
+  const { initWorkflowEngine } = require('./workflows');
+  const runner = await initWorkflowEngine();
+
   const { createApp } = require('./app');
   const server = createApp().listen(env.PORT, () => {
     logger.info({ port: env.PORT, env: env.NODE_ENV }, 'AgentHire API listening');
   });
+
+  // Resume workflows interrupted by a previous shutdown and start pending ones.
+  await runner.recover();
 
   let shuttingDown = false;
   const shutdown = async (signal) => {
     if (shuttingDown) return;
     shuttingDown = true;
     logger.info({ signal }, 'Shutting down');
-    server.close(async () => {
-      await disconnectDatabase().catch(() => {});
-      process.exit(0);
-    });
-    setTimeout(() => process.exit(1), 10000).unref();
+    server.close();
+    // Let in-flight workflow steps finish; anything unfinished is resumed from
+    // its checkpoint on the next boot.
+    await Promise.race([runner.idle(), new Promise((r) => setTimeout(r, 8000))]);
+    await disconnectDatabase().catch(() => {});
+    process.exit(0);
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
