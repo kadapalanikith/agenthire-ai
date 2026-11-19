@@ -1,13 +1,18 @@
 {
   "_meta": {
     "id": "upload-policy",
-    "version": "1.0.0",
-    "provenance": "ADDENDUM section 7 (PDF validation, upload size restrictions); size value INFERRED"
+    "version": "1.1.0",
+    "provenance": "ADDENDUM section 7 (PDF validation, upload size restrictions, rate limiting); size and rate values INFERRED"
   },
   "resume": {
     "allowed_mime_types": ["application/pdf"],
     "allowed_extensions": [".pdf"],
     "max_size_bytes": 5242880,
     "require_pdf_signature": true
-  }
+  },
+  "rate_limits": {
+    "application_upload": { "window_ms": 3600000, "max": 10 },
+    "application_status": { "window_ms": 60000, "max": 60 }
+  },
+  "resume_access_link_ttl_seconds": 300
 }
