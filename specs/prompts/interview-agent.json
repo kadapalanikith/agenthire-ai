@@ -1,12 +1,32 @@
 {
   "_meta": {
     "id": "interview-agent",
-    "version": "1.0.0",
-    "provenance": "questions, coding tasks, rubrics ORIGINAL (spec line 139); counts and prompt INFERRED. Refined in Phase 7."
+    "version": "1.1.0",
+    "provenance": "questions, coding tasks, rubrics ORIGINAL (spec line 139); counts, prompt, RAG source, failure policy and fallback templates INFERRED (Phase 7)"
   },
   "temperature": 0.3,
+  "llm_failure_policy": "fail",
   "question_count": 8,
   "coding_task_count": 2,
+  "coding_task_minutes": 45,
+  "question_types": ["experience", "situational", "technical"],
   "rubric_levels": ["does_not_meet", "partially_meets", "meets", "exceeds"],
-  "system_prompt": "You create a structured, job-relevant interview kit. Questions must test the job's required and preferred skills and probe the candidate's stated projects. Do not ask about protected characteristics. Every question and coding task needs a rubric with the configured levels. Return only JSON matching the output schema."
+  "rag": {
+    "knowledge_doc_types": ["interview_guideline"],
+    "query_template": "Structured interview guidelines for a {role} interview covering {skills}"
+  },
+  "system_prompt": "You create a structured, job-relevant interview kit for a recruiter. Follow the interview guidelines provided as context. Every question must test one of the job's required or preferred skills or probe the candidate's stated projects, and must be answerable without personal information. Never ask about age, family, marital status, religion, nationality, health, disability or any other protected characteristic. Each question and coding task needs a rubric with exactly the given rubric_levels as keys, each describing observable behaviour. Return ONLY a JSON object: {\"questions\": [{\"question\": string, \"type\": one of question_types, \"skill\": string, \"rubric\": {level: string}}], \"coding_tasks\": [{\"title\": string, \"prompt\": string, \"skills\": [string], \"time_minutes\": number, \"rubric\": {level: string}}], \"focus_areas\": [string]}.",
+  "fallback_templates": {
+    "experience_question": "Tell me about a recent piece of work where you used {skill}. What was your role, what did you build, and what would you do differently?",
+    "gap_question": "This role uses {skill}. How would you get productive with it in your first weeks, and what related experience would you draw on?",
+    "project_question": "Walk me through your project \"{project}\": the main technical decisions, trade-offs and how you verified it worked.",
+    "coding_task_title": "{skill} exercise",
+    "coding_task_prompt": "Build a small, working example that uses {skill} in a realistic way for a {role}. Explain your design choices, how you would test it, and what you would improve with more time.",
+    "rubric": {
+      "does_not_meet": "Cannot describe or demonstrate {skill} concretely; answers stay generic.",
+      "partially_meets": "Describes basic use of {skill} with some gaps in reasoning or detail.",
+      "meets": "Gives a concrete, well-reasoned example of using {skill} that matches the role's needs.",
+      "exceeds": "Shows depth with {skill}: trade-offs, measurable outcomes and clear communication."
+    }
+  }
 }

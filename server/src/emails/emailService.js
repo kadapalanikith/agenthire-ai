@@ -9,14 +9,38 @@ const { renderTemplate } = require('./renderTemplate');
 
 const OUTBOX_FILE = path.resolve(__dirname, '../../logs/email-outbox.jsonl');
 
-/** Retryable delivery failure (retry-policy: EMAIL_API_FAILURE). */
+/**
+ * Delivery failure. `code` follows the retry policy: EMAIL_API_FAILURE
+ * (transient: network, rate limit, provider outage) is retryable;
+ * EMAIL_CONFIG_ERROR (bad key, unverified sender, invalid request) is not.
+ */
 class EmailDeliveryError extends Error {
-  constructor(message) {
+  constructor(message, code = 'EMAIL_API_FAILURE') {
     super(message);
     this.name = 'EmailDeliveryError';
-    this.code = 'EMAIL_API_FAILURE';
-    this.retryable = true;
+    this.code = code;
+    this.retryable = code === 'EMAIL_API_FAILURE';
   }
+}
+
+// Resend error names that will not succeed on retry.
+const CONFIG_ERROR_NAMES = new Set([
+  'missing_api_key',
+  'invalid_api_key',
+  'invalid_api_Key',
+  'restricted_api_key',
+  'validation_error',
+  'invalid_from_address',
+  'invalid_access',
+  'missing_required_field',
+  'invalid_parameter',
+  'not_found',
+]);
+
+function classifyResendError(error) {
+  const status = error?.statusCode;
+  if (CONFIG_ERROR_NAMES.has(error?.name) || [400, 401, 403, 404, 422].includes(status)) return 'EMAIL_CONFIG_ERROR';
+  return 'EMAIL_API_FAILURE';
 }
 
 let client;
@@ -80,9 +104,12 @@ async function sendTemplatedEmail({ to, templateId, variables, idempotencyKey })
     throw new EmailDeliveryError(`Email provider request failed: ${err.message}`);
   }
   if (response.error) {
-    throw new EmailDeliveryError(`Email provider rejected the request: ${response.error.message || response.error.name}`);
+    throw new EmailDeliveryError(
+      `Email provider rejected the request: ${response.error.message || response.error.name}`,
+      classifyResendError(response.error)
+    );
   }
   return { ...base, delivery: 'sent', provider_id: response.data.id };
 }
 
-module.exports = { sendTemplatedEmail, isEmailConfigured, setEmailClient, EmailDeliveryError };
+module.exports = { sendTemplatedEmail, isEmailConfigured, setEmailClient, EmailDeliveryError, classifyResendError };

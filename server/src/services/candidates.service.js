@@ -121,6 +121,8 @@ function screeningFrom(workflow) {
         }
       : null,
     parsing: out.resume_parser ? { parse_source: out.resume_parser.parse_source, llm: out.resume_parser.llm } : null,
+    interview: out.interview_agent || null,
+    email: out.email_agent || null,
   };
 }
 

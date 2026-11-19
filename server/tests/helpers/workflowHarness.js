@@ -33,8 +33,8 @@ function createHarness() {
     async init() {
       checkpointer = await createMongoCheckpointer();
     },
-    makeRunner({ embedder = createFakeEmbedder(), store = createMemoryStore(), handlersOverride } = {}) {
-      const graph = buildHiringGraph({ deps: { llm: null, embedder, store }, checkpointer, retryOverrides: { retry_delay_ms: 5 }, handlersOverride });
+    makeRunner({ embedder = createFakeEmbedder(), store = createMemoryStore(), handlersOverride, sendEmail, llm = null } = {}) {
+      const graph = buildHiringGraph({ deps: { llm, embedder, store, sendEmail }, checkpointer, retryOverrides: { retry_delay_ms: 5 }, handlersOverride });
       const runner = new WorkflowRunner({ graph, concurrency: 2 });
       setWorkflowRunner(runner);
       return runner;

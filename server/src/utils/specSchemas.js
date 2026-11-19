@@ -252,14 +252,36 @@ const matchingAgentPrompt = z.object({
   output_fields: z.array(z.string().min(1)).min(1),
 });
 
-const interviewAgentPrompt = z.object({
-  _meta: meta,
-  temperature,
-  question_count: z.number().int().min(1).max(30),
-  coding_task_count: z.number().int().min(0).max(10),
-  rubric_levels: z.array(z.string().min(1)).min(2),
-  system_prompt: z.string().min(20),
-});
+const interviewAgentPrompt = z
+  .object({
+    _meta: meta,
+    temperature,
+    llm_failure_policy: llmFailurePolicy,
+    question_count: z.number().int().min(1).max(30),
+    coding_task_count: z.number().int().min(0).max(10),
+    coding_task_minutes: z.number().int().min(5).max(240),
+    question_types: z.array(z.string().regex(/^[a-z_]+$/)).min(1),
+    rubric_levels: z.array(z.string().regex(/^[a-z_]+$/)).min(2),
+    rag: z.object({
+      knowledge_doc_types: z.array(z.string().min(1)).min(1),
+      query_template: z.string().includes('{role}'),
+    }),
+    system_prompt: z.string().min(20),
+    fallback_templates: z.object({
+      experience_question: z.string().includes('{skill}'),
+      gap_question: z.string().includes('{skill}'),
+      project_question: z.string().includes('{project}'),
+      coding_task_title: z.string().includes('{skill}'),
+      coding_task_prompt: z.string().includes('{skill}'),
+      rubric: z.record(z.string(), z.string().min(1)),
+    }),
+  })
+  .superRefine((spec, ctx) => {
+    const keys = Object.keys(spec.fallback_templates.rubric).sort();
+    if (JSON.stringify(keys) !== JSON.stringify([...spec.rubric_levels].sort())) {
+      ctx.addIssue({ code: 'custom', path: ['fallback_templates', 'rubric'], message: 'rubric templates must cover exactly the rubric_levels' });
+    }
+  });
 
 const emailTemplate = z
   .object({

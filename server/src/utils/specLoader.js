@@ -74,8 +74,10 @@ function crossValidate(specs) {
     }
   }
   const ragTypes = specs['evaluation/rag-retrieval'].knowledge_doc_types;
-  for (const t of specs['prompts/matching-agent'].rag.knowledge_doc_types) {
-    if (!ragTypes.includes(t)) throw new SpecError(`prompts/matching-agent: rag.knowledge_doc_types "${t}" is not defined in evaluation/rag-retrieval`);
+  for (const key of ['prompts/matching-agent', 'prompts/interview-agent']) {
+    for (const t of specs[key].rag.knowledge_doc_types) {
+      if (!ragTypes.includes(t)) throw new SpecError(`${key}: rag.knowledge_doc_types "${t}" is not defined in evaluation/rag-retrieval`);
+    }
   }
   for (const [key, spec] of Object.entries(specs)) {
     const expectedId = key.split('/').pop();

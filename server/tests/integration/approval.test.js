@@ -73,9 +73,9 @@ describe('POST /workflow/approve', () => {
     expect((await statuses(id)).human_approval).toBe('success');
     expect((await Candidate.findById(a.candidate_id)).status).toBe('approved');
 
-    // The interview agent is Phase 7: it fails explicitly, and the decision is not overwritten.
-    expect(wf.status).toBe('failed');
-    expect(wf.last_error).toMatchObject({ agent_name: 'interview_agent', code: 'NOT_IMPLEMENTED', retryable: false });
+    // Phase 7: interview kit, then the invite email; the workflow completes.
+    expect(wf.status).toBe('completed');
+    expect(wf.last_error).toBeNull();
     const logs = await WorkflowLog.find({ workflow_id: id }).sort({ created_at: 1, _id: 1 });
     expect(logs.map((l) => `${l.agent_name}:${l.status}`)).toEqual([
       'resume_parser:success',
@@ -84,8 +84,12 @@ describe('POST /workflow/approve', () => {
       'shortlisting_agent:success',
       'human_approval:waiting_approval',
       'human_approval:success',
-      'interview_agent:failed',
+      'interview_agent:success',
+      'email_agent:success',
     ]);
+    const out = wf.toJSON().state_output;
+    expect(out.interview_agent.questions.length).toBeGreaterThan(0);
+    expect(out.email_agent).toMatchObject({ template_id: 'interview-invite', delivery: 'not_configured', recipient: 'j***@example.com' });
   });
 
   test('reject skips the interview agent and goes to the email agent', async () => {
@@ -98,10 +102,13 @@ describe('POST /workflow/approve', () => {
     expect(res.status).toBe(202);
     await runner.idle();
     const s = await statuses(a.workflow.id);
-    expect(s).toMatchObject({ human_approval: 'success', interview_agent: 'skipped', email_agent: 'failed' });
+    expect(s).toMatchObject({ human_approval: 'success', interview_agent: 'skipped', email_agent: 'success' });
     expect(await WorkflowLog.countDocuments({ workflow_id: a.workflow.id, agent_name: 'interview_agent', status: 'skipped' })).toBe(1);
     expect((await Candidate.findById(a.candidate_id)).status).toBe('rejected');
-    expect((await Workflow.findById(a.workflow.id)).last_error).toMatchObject({ agent_name: 'email_agent', code: 'NOT_IMPLEMENTED' });
+    const wf = await Workflow.findById(a.workflow.id);
+    expect(wf.status).toBe('completed');
+    expect(wf.toJSON().state_output.email_agent).toMatchObject({ template_id: 'rejection', decision: 'reject' });
+    expect(wf.toJSON().state_output.interview_agent).toBeUndefined();
   });
 
   test('overriding the AI recommendation requires a recorded reason', async () => {

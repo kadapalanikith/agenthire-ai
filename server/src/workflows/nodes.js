@@ -15,6 +15,8 @@ const { runEmbeddingAgent } = require('../agents/embedding.agent');
 const { runMatchingAgent } = require('../agents/matching.agent');
 const { runShortlistingAgent } = require('../agents/shortlisting.agent');
 const { buildApprovalRequest, resolveApproval } = require('../agents/humanApproval.agent');
+const { runInterviewAgent } = require('../agents/interview.agent');
+const { runEmailAgent } = require('../agents/email.agent');
 
 /**
  * Node handlers: load inputs, call the agent, persist domain results on the
@@ -85,13 +87,23 @@ function createNodeHandlers(deps) {
       return { update: { approval }, output: approval };
     },
 
-    // Implemented in Phase 7. They cannot be reached until the approval
-    // endpoint exists (Phase 6); if reached, they fail loudly instead of faking output.
-    async interview_agent() {
-      throw new AgentError('NOT_IMPLEMENTED', 'The interview agent is implemented in Phase 7');
+    async interview_agent(state) {
+      const out = await runInterviewAgent(
+        { requirements: state.requirements, parsedResume: state.parsed_resume, matchResult: state.match_result },
+        { llm: deps.llm, embedder: deps.embedder, store: deps.store }
+      );
+      return { update: { interview_kit: out }, output: out };
     },
-    async email_agent() {
-      throw new AgentError('NOT_IMPLEMENTED', 'The email agent is implemented in Phase 7');
+
+    async email_agent(state) {
+      // Contact details are read from the database, never kept in graph state.
+      const candidate = await Candidate.findById(state.candidate_id).select('name email');
+      if (!candidate) throw new AgentError('INVALID_SCHEMA', 'Candidate no longer exists');
+      const out = await runEmailAgent(
+        { workflowId: state.workflow_id, approval: state.approval, candidate, requirements: state.requirements },
+        { sendEmail: deps.sendEmail }
+      );
+      return { update: { email_result: out }, output: out };
     },
   };
 }
