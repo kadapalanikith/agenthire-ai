@@ -25,9 +25,9 @@ docs/     Architecture, API reference, implementation checklist
 
 ## Status
 
-Phases 1–5 are complete: foundation and authentication, job management, public applications with PDF
-uploads, the parser, embedding and matching agents with RAG, and LangGraph orchestration with spec-driven
-shortlisting that pauses every candidate for human approval. See
+Phases 1–6 are complete: foundation and authentication, job management, public applications with PDF
+uploads, the parser, embedding and matching agents with RAG, LangGraph orchestration with spec-driven
+shortlisting, and human approval with workflow monitoring, retry and checkpoint resume. See
 [`docs/IMPLEMENTATION_CHECKLIST.md`](./docs/IMPLEMENTATION_CHECKLIST.md).
 
 ## Getting started

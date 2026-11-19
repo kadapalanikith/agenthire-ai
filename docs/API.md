@@ -278,6 +278,38 @@ Body `{ "candidate_id" }`. Starts a `pending` workflow (creating one if the cand
 
 ---
 
+## Phase 6 endpoints (implemented)
+
+### POST /workflow/approve — recruiter (owner or admin)
+Body: `{ "workflow_id", "decision": "approve" | "reject", "reason"? }`.
+- Only for `status: waiting_approval` (otherwise `409 WORKFLOW_STATE_CONFLICT`).
+- **Override rule** (spec-driven): approving a `rejected` recommendation or rejecting a `shortlisted` one
+  requires `reason` of at least `fairness-policy.override_reason_min_length` characters
+  (`shortlisting-rules.override_requires_reason`) → otherwise `400 VALIDATION_ERROR` with `details[0].path = "reason"`.
+- The decision is stored and the workflow moves `waiting_approval → running` in one atomic update. Concurrent
+  or repeated decisions get `409`.
+- `202 { workflow, approval: { decision, reason, ai_recommendation, overridden, decided_by, decided_at } }`.
+- The graph resumes **from its checkpoint** (earlier nodes are not re-run). Approve → `interview_agent`;
+  reject → `interview_agent` is marked `skipped` and the run continues to `email_agent`. Candidate status
+  becomes `approved` / `rejected`. Later failures never change it.
+- Until Phase 7, the next node fails with `NOT_IMPLEMENTED` (workflow `failed`); a Phase 7 retry continues from there.
+
+### POST /workflow/retry — recruiter (owner or admin)
+Body `{ "workflow_id" }`. Only for `status: failed` (else `409`). Increments `retry_count`, clears
+`last_error`, and resumes from the checkpoint: the failed node runs again with a fresh retry budget;
+completed nodes are not repeated. → `202 { workflow }`.
+
+### Changes to existing endpoints
+- `GET /workflow/:id` adds `approval_request` while waiting:
+  `{ type, ai_recommendation, match_score, applied_band, explanation, missing_skills,
+     reason_required: { approve: bool, reject: bool }, reason_min_length }`,
+  and `workflow.decision_pending` (a decision accepted but not yet applied).
+- `GET /meta/workflow-spec` adds `node_labels` (display names) and
+  `approval_rules: { override_requires_reason, override_reason_min_length }`.
+- Human approval counts as one attempt even though LangGraph re-enters it on resume.
+
+---
+
 ## Planned endpoints
 
-`POST /workflow/approve` and `POST /workflow/retry` (Phase 6); analytics and notifications (Phase 8).
+Analytics and notifications (Phase 8).

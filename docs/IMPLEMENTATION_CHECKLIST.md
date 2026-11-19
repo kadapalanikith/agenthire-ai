@@ -2,7 +2,7 @@
 
 Legend: ✅ done and tested · 🟡 done, needs follow-up · ⬜ not started
 
-_Last updated: 2026-11-19, end of Phase 5._
+_Last updated: 2026-11-19, end of Phase 6._
 
 ## Phase 0: Repository and specification analysis ✅
 - ✅ Spec read, conflicts identified, architecture approved (`docs/ARCHITECTURE.md`)
@@ -169,7 +169,28 @@ _Last updated: 2026-11-19, end of Phase 5._
 - ✅ **Restart check**: after killing and restarting the server, the paused workflow, its 5 logs and 6 LangGraph checkpoints were intact, with no node re-run
 - 🟡 Interview and email agents are Phase 7; until approval exists (Phase 6) they cannot be reached
 - 🟡 The workflow runner is in-process: run a single API instance (horizontal scaling needs a shared queue)
-## Phase 6: Human approval, workflow monitoring, resumability ⬜
+## Phase 6: Human approval, workflow monitoring, resumability ✅
+**Server**
+- ✅ `POST /workflow/approve`: owner-scoped, spec-driven override-reason rule, atomic decide-once, stored `pending_decision`, resume via LangGraph `Command`
+- ✅ Approve → interview branch; reject → `interview_agent` recorded as `skipped`; candidate becomes `approved` / `rejected` and later failures never overwrite it
+- ✅ `POST /workflow/retry`: failed → running, `retry_count`, resume from the checkpoint with a fresh per-run retry budget
+- ✅ Boot recovery applies a decision accepted before a crash, and leaves undecided paused workflows waiting
+- ✅ `approval_request` in workflow detail with server-computed `reason_required`; `node_labels` and `approval_rules` in `/meta/workflow-spec` (spec v1.1.0)
+- ✅ Checkpoint nodes count one attempt across the resume
+
+**Client**
+- ✅ Workflows tab: status filters (needs decision, running, failed, completed, queued), progress dots coloured from `node-states.json`, polling while active, opens pre-filtered from the dashboard banner
+- ✅ Workflow detail: vertical timeline of all seven agents in spec order with real status, start/end times, duration, attempts, output summary and errors; tap a step for an agent sheet (execution, output, attempt history with error codes); decision prompt while waiting; failure card with Retry; decision card; polling while running
+- ✅ Approval screen: advisory AI assessment, approve/reject, reason required only for overrides (from the server), server conflicts shown
+- ✅ Candidate detail: "Review and decide" and "View workflow"
+
+**Tests and checks (Phase 6)**
+- ✅ Server: 191/191 (12 new: approval request, resume without re-running nodes, reject skips the interview, override reason, concurrent decisions, ownership and validation, crash between approve and resume, no resume without a decision, retry from checkpoint, fresh retry budget, retry conflicts)
+- ✅ Client: 73/73 (9 new: list and filters, banner pre-filter, timeline order, statuses and summaries, agent sheet, failure and retry, approval with and without override, conflict)
+- ✅ Web export, Android export, expo-doctor 20/20
+- ✅ **Live outage test**: Qdrant container stopped during an application → embedding retried on the spec schedule (5 s) and failed after 4 attempts with `VECTOR_DB_TIMEOUT` → Qdrant restarted → `POST /workflow/retry` → continued from the embedding step (parser not re-run) → paused at approval
+- ✅ **Live approval test**: override without a reason rejected (400), approve accepted (202), second approve 409; resumed from the checkpoint without re-running earlier agents; candidate `approved`; stopped at the Phase 7 interview agent with `NOT_IMPLEMENTED`; 5 failure-log entries written
+- 🟡 Approved and rejected workflows end `failed` at `interview_agent` / `email_agent` until Phase 7. Retrying them after Phase 7 continues from that node
 ## Phase 7: Interview generation and email ⬜
 ## Phase 8: Analytics, notifications, UI refinement ⬜
 ## Phase 9: Security, testing, optimisation, deployment ⬜
