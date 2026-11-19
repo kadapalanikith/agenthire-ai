@@ -39,6 +39,14 @@ describe('environment validation', () => {
     expect(() => loadEnv({ ...base, MONGODB_URI: undefined })).toThrow(/MONGODB_URI/);
   });
 
+  test('the test run never loads credentials from server/.env', () => {
+    const { getEnv } = require('../../src/config/env');
+    expect(getEnv().NODE_ENV).toBe('test');
+    expect(getEnv().GROQ_API_KEY).toBeUndefined();
+    expect(getEnv().OPENROUTER_API_KEY).toBeUndefined();
+    expect(getEnv().RESEND_API_KEY).toBeUndefined();
+  });
+
   test('requires CORS_ORIGINS in production', () => {
     expect(() => loadEnv({ ...base, NODE_ENV: 'production' })).toThrow(/CORS_ORIGINS/);
     expect(loadEnv({ ...base, NODE_ENV: 'production', CORS_ORIGINS: 'https://a.example, https://b.example' }).CORS_ORIGINS).toEqual([

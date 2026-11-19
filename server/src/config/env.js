@@ -4,7 +4,10 @@ const path = require('node:path');
 const dotenv = require('dotenv');
 const { z } = require('zod');
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env'), quiet: true });
+// Tests must never pick up real credentials from server/.env.
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config({ path: path.resolve(__dirname, '../../.env'), quiet: true });
+}
 
 const optionalString = z
   .string()
@@ -36,9 +39,9 @@ const envSchema = z.object({
   COMPANY_NAME: z.string().trim().default('AgentHire'),
 
   GROQ_API_KEY: optionalString,
-  GROQ_MODEL: z.string().trim().default('llama-3.3-70b-versatile'),
+  GROQ_MODEL: z.string().trim().default('openai/gpt-oss-120b'),
   OPENROUTER_API_KEY: optionalString,
-  OPENROUTER_MODEL: z.string().trim().default('meta-llama/llama-3.3-70b-instruct:free'),
+  OPENROUTER_MODEL: z.string().trim().default('nvidia/nemotron-3.5-super-vl:free'),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
 
   QDRANT_URL: z.url().default('http://127.0.0.1:6333'),

@@ -138,8 +138,10 @@ _Last updated: 2026-11-19, end of Phase 4._
 - ✅ Opt-in real-service test (`RUN_REAL_SERVICES=1`): real bge-small + real Qdrant, 2/2 passed, test data cleaned up
 - ✅ Docker Compose stack (MongoDB 8.0 + Qdrant 1.15.4) started and used
 - ✅ Live dry run on the demo resume against Qdrant: deterministic parse, 3 chunks embedded, score 100 (60 + 20 + 20), evaluation guide retrieved at 0.864
-- 🟡 **LLM path not verified live**: no `GROQ_API_KEY` / `OPENROUTER_API_KEY` in this environment. It is covered by tests with scripted providers only
-- 🟡 **`minimum_similarity` 0.75 is high for bge-small** (measured: relevant policy chunk 0.664, relevant resume chunk 0.719, both filtered). Decision pending; the value is unchanged
+- ✅ **LLM path verified live** with Groq `openai/gpt-oss-120b` (primary) and OpenRouter `nvidia/nemotron-3.5-super-vl:free` (fallback). The parser and matching agents ran through each provider, and fallback was exercised by forcing a Groq failure. The defaults `llama-3.3-70b-versatile` and `meta-llama/llama-3.3-70b-instruct:free` were no longer available and were replaced
+- ✅ Fixed: skills inferred by the parser LLM are no longer accepted without a verified quote from the resume
+- ✅ Fixed: the test run no longer loads `server/.env` (tests can never use real credentials)
+- 🟡 **`minimum_similarity` 0.75 blocks real evidence with bge-small** (measured: fair hiring policy 0.664; a candidate's own resume chunk 0.62–0.66 for every skill query, relevant or not). As a result the LLM sees no resume text and cannot verify implied skills. Decision pending; the value is unchanged
 - 🟡 Parser and matching results are not yet saved to candidates; the LangGraph workflow persists them in Phase 5
 - 🟡 Knowledge ingestion replaces chunks per document but does not delete points for documents removed from `specs/knowledge/`
 ## Phase 5: LangGraph orchestration and shortlisting ⬜

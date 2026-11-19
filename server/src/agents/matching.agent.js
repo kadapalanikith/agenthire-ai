@@ -93,19 +93,17 @@ async function runMatchingAgent({ candidateId, parsedResume, resumeText, require
   const aliases = parserSpec.skill_aliases;
   const canonicalize = createSkillCanonicalizer([...requirements.required_skills, ...requirements.preferred_skills, ...parserSpec.known_skills], aliases);
 
-  // 1. Deterministic evidence: parsed skills, project technologies and text mentions.
-  const candidateKeys = new Set(
-    [...parsedResume.skills, ...parsedResume.projects.flatMap((p) => p.technologies)].map((s) => skillKey(canonicalize(s)))
-  );
+  // 1. Deterministic evidence: the skill (or an alias) is written in the resume text.
+  //    Skills the parser merely inferred (e.g. "JavaScript" from "ES2022") are NOT
+  //    accepted here; they must be confirmed by a verified quote in step 3.
   const jobSkills = [...requirements.required_skills, ...requirements.preferred_skills];
-  const mentioned = new Set(findSkillMentions(resumeText, jobSkills, aliases).map(skillKey));
   const evidence = [];
   const matchedKeys = new Set();
   for (const skill of jobSkills) {
-    const k = skillKey(skill);
-    if (candidateKeys.has(k) || mentioned.has(k)) {
-      matchedKeys.add(k);
-      evidence.push({ skill, quote: excerptAround(resumeText, skill, aliases, spec.evidence.max_quote_chars), source: 'resume_text' });
+    const quote = excerptAround(resumeText, skill, aliases, spec.evidence.max_quote_chars);
+    if (quote) {
+      matchedKeys.add(skillKey(skill));
+      evidence.push({ skill, quote, source: 'resume_text' });
     }
   }
 

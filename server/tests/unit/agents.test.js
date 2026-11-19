@@ -205,6 +205,34 @@ describe('Matching Agent', () => {
     expect(JSON.parse(sent).skills_to_assess).toEqual(['React', 'JavaScript', 'CSS', 'Next.js', 'Tailwind CSS']);
   });
 
+  test('a skill inferred by the parser but not written in the resume needs a verified quote', async () => {
+    const resumeText = 'UI engineer for 3 years. Wrote ES2022 code with async/await. Styled pages using flexbox.';
+    const parsed = { ...baseParsed, skills: ['JavaScript', 'CSS', 'React'], experience_years: 3 };
+    const { store, embedder, input } = await setup({ resumeText, parsedResume: parsed });
+    // Without an LLM nothing can verify the inferred skills.
+    const noLlm = await runMatchingAgent(input, { llm: null, embedder, store });
+    expect(noLlm.matched_required_skills).toEqual([]);
+    // With an LLM, only claims backed by a verbatim quote count.
+    const llm = createFakeLlm([
+      {
+        name: 'groq',
+        respond: () =>
+          JSON.stringify({
+            assessments: [
+              { skill: 'JavaScript', matched: true, evidence: 'Wrote ES2022 code with async/await' },
+              { skill: 'CSS', matched: true, evidence: 'Styled pages using flexbox' },
+              { skill: 'React', matched: true, evidence: null },
+            ],
+            explanation: 'JavaScript and CSS are evidenced; React is not.',
+          }),
+      },
+    ]);
+    const out = await runMatchingAgent(input, { llm, embedder, store });
+    expect(out.matched_required_skills).toEqual(['JavaScript', 'CSS']);
+    expect(out.evidence.every((e) => e.quote && e.source === 'llm_verified_quote')).toBe(true);
+    expect(out.rejected_llm_claims).toEqual([{ skill: 'React', reason: 'quote missing or wrong length' }]);
+  });
+
   test('injects knowledge retrieved from the vector store into the LLM prompt', async () => {
     const resumeText = 'React developer, 2 years, JavaScript and CSS.';
     const { store, embedder, input } = await setup({ resumeText, parsedResume: { ...baseParsed, experience_years: 2 } });
