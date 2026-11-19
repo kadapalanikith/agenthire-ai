@@ -23,6 +23,17 @@ async function authenticate(req, _res, next) {
   next();
 }
 
+/**
+ * For public routes that return extra data to signed-in recruiters. No
+ * header → anonymous. A header that is present but invalid is rejected
+ * (401) rather than silently ignored, so expired sessions surface.
+ */
+async function optionalAuthenticate(req, _res, next) {
+  const token = extractBearer(req);
+  if (token) req.user = await authService.resolveUserFromToken(token);
+  next();
+}
+
 /** Allow only the given roles. Must run after authenticate. */
 function requireRole(...roles) {
   return function roleGuard(req, _res, next) {
@@ -34,4 +45,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { authenticate, requireRole, extractBearer };
+module.exports = { authenticate, optionalAuthenticate, requireRole, extractBearer };
