@@ -95,8 +95,73 @@ Errors: `400 VALIDATION_ERROR | INVALID_RESET_TOKEN`, `429`.
 
 ---
 
+## Phase 2 endpoints (implemented)
+
+### Job object
+
+Owner view (returned to the creating recruiter or an admin):
+```json
+{ "id": "6afe83ba1f38ce5ef9532385", "title": "Frontend Developer",
+  "description": "Build accessible interfaces for the recruiter console.",
+  "required_skills": ["React", "JavaScript", "CSS"], "preferred_skills": ["Next.js"],
+  "min_experience": 2, "status": "open | closed",
+  "hiring_spec_id": "frontend-developer", "workflow_spec_id": "default-hiring-workflow",
+  "hiring_spec": { "id": "frontend-developer", "role": "Frontend Developer", "version": "1.0.0" },
+  "created_by": "<user id>", "created_at": "…", "updated_at": "…",
+  "public_url": "<PUBLIC_WEB_URL>/jobs/<id>", "apply_url": "<PUBLIC_WEB_URL>/jobs/<id>/apply" }
+```
+Public view (everyone else): `id, title, description, required_skills, preferred_skills,
+min_experience, status, created_at, public_url, apply_url`.
+
+**Field rules**: title 3–120 chars; description 20–5000; `required_skills` 1–30, `preferred_skills` 0–30,
+each ≤ 50 chars without `< > { } $`. Skills are trimmed, inner whitespace collapsed and case-insensitive
+duplicates removed (first spelling kept). A skill cannot be both required and preferred.
+`min_experience` 0–50 in steps of 0.5. `hiring_spec_id` must exist in `specs/hiring/`;
+`workflow_spec_id` defaults to, and must equal, the id in `specs/workflow/default-hiring-workflow.json`.
+`created_by` and `status` cannot be set on create.
+
+### POST /jobs — recruiter
+Body: `title, description, required_skills, preferred_skills?, min_experience, hiring_spec_id, workflow_spec_id?`
+→ `201 { job }` (owner view). Errors: `400 VALIDATION_ERROR`, `401`, `403`.
+
+### GET /jobs — public (optional auth)
+Query: `scope=public|mine` (default `public`), `status=open|closed` (mine only), `q` (title search,
+case-insensitive, literal), `page` (≥1, default 1), `limit` (1–50, default 20).
+- `public`: open jobs from all recruiters, public view.
+- `mine`: requires a token; the recruiter's jobs of any status, owner view.
+
+→ `200 { jobs: [...] }` with `meta: { page, limit, total, total_pages }`, newest first.
+An invalid token is rejected with `401` rather than ignored.
+
+### GET /jobs/:id — public (optional auth)
+→ `200 { job, can_manage }`. Owners/admins get the owner view and `can_manage: true`; everyone else
+gets the public view. Closed jobs are still readable (status included). Errors: `400` malformed id, `404`.
+
+### PUT /jobs/:id — recruiter (owner or admin)
+Partial body with any of the create fields plus `status`. At least one field is required. Overlap is
+checked against the merged result (e.g. new preferred vs existing required).
+→ `200 { job }`. Errors: `400`, `401`, `403` (not owner), `404`.
+
+### GET /dashboard/summary — recruiter
+```json
+{ "jobs": { "total": 6, "open": 5, "closed": 1 }, "recent_jobs": [ /* up to 5 owner-view jobs */ ],
+  "generated_at": "…" }
+```
+Computed from the database for the signed-in recruiter only. Candidate and workflow figures are added
+in later phases.
+
+### GET /meta/hiring-specs — recruiter
+Base role specs from `specs/hiring/` for the job form:
+```json
+{ "hiring_specs": [ { "id": "frontend-developer", "version": "1.0.0", "role": "Frontend Developer",
+  "required_skills": ["React", "JavaScript", "CSS"], "preferred_skills": ["Next.js", "Tailwind CSS"],
+  "minimum_score": 75, "interview_rounds": 2 } ] }
+```
+
+---
+
 ## Planned endpoints
 
 Contracts are defined in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §7 and will be documented here as each
-phase implements them: jobs (Phase 2), candidates and uploads (Phase 3), workflows (Phases 5–6),
-analytics and notifications (Phase 8).
+phase implements them: candidates and uploads (Phase 3), workflows (Phases 5–6), analytics and
+notifications (Phase 8).

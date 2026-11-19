@@ -178,6 +178,7 @@ the original spec). Pagination: `?page=&limit=` (server-capped).
 | GET /meta/workflow-spec | public | 1 |
 | POST /jobs, PUT /jobs/:id | recruiter (owner for PUT) | 2 |
 | GET /jobs (public open jobs; `scope=mine` with JWT), GET /jobs/:id | public | 2 |
+| GET /dashboard/summary ➕, GET /meta/hiring-specs ➕ | recruiter | 2 |
 | POST /candidates/upload | public, strict rate limit | 3 |
 | GET /candidates/status/:statusToken | public (stage only, never score) | 3 |
 | GET /candidates, GET /candidates/:id, GET /candidates/:id/resume | recruiter, owner-scoped | 3 |

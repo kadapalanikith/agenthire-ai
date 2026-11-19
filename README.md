@@ -25,7 +25,8 @@ docs/     Architecture, API reference, implementation checklist
 
 ## Status
 
-Phase 1 (foundation and authentication) is complete. See
+Phase 1 (foundation and authentication) and Phase 2 (recruiter dashboard and job management) are
+complete. See
 [`docs/IMPLEMENTATION_CHECKLIST.md`](./docs/IMPLEMENTATION_CHECKLIST.md).
 
 ## Getting started
