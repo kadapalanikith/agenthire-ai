@@ -141,7 +141,7 @@ _Last updated: 2026-11-19, end of Phase 4._
 - ✅ **LLM path verified live** with Groq `openai/gpt-oss-120b` (primary) and OpenRouter `nvidia/nemotron-3.5-super-vl:free` (fallback). The parser and matching agents ran through each provider, and fallback was exercised by forcing a Groq failure. The defaults `llama-3.3-70b-versatile` and `meta-llama/llama-3.3-70b-instruct:free` were no longer available and were replaced
 - ✅ Fixed: skills inferred by the parser LLM are no longer accepted without a verified quote from the resume
 - ✅ Fixed: the test run no longer loads `server/.env` (tests can never use real credentials)
-- 🟡 **`minimum_similarity` 0.75 blocks real evidence with bge-small** (measured: fair hiring policy 0.664; a candidate's own resume chunk 0.62–0.66 for every skill query, relevant or not). As a result the LLM sees no resume text and cannot verify implied skills. Decision pending; the value is unchanged
+- ✅ Retrieval thresholds split (D19, user-approved): knowledge 0.65, the candidate's own resume 0 (top_k). Live result for a resume that implies JavaScript and CSS without naming them: score 40 → 80 through LLM quotes verified against the resume; the fair-hiring policy now reaches the LLM
 - 🟡 Parser and matching results are not yet saved to candidates; the LangGraph workflow persists them in Phase 5
 - 🟡 Knowledge ingestion replaces chunks per document but does not delete points for documents removed from `specs/knowledge/`
 ## Phase 5: LangGraph orchestration and shortlisting ⬜

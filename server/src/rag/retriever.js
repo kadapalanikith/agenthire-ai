@@ -3,8 +3,14 @@
 const { getSpec } = require('../utils/specLoader');
 const { collectionConfig } = require('./index');
 
+/** Similarity threshold for a collection kind (DECISION D19). */
+function thresholdFor(kind) {
+  const { retrieval } = getSpec('evaluation/rag-retrieval');
+  return kind === 'resumes' ? retrieval.resume_minimum_similarity : retrieval.minimum_similarity;
+}
+
 /**
- * Similarity search with top_k and minimum_similarity from
+ * Similarity search with top_k and the per-kind threshold from
  * specs/evaluation/rag-retrieval.json. Returns traceable context entries.
  */
 async function retrieve({ kind, query, filter, embedder, store, topK }) {
@@ -14,7 +20,7 @@ async function retrieve({ kind, query, filter, embedder, store, topK }) {
   const vector = await embedder.embedQuery(query);
   const hits = await store.search(name, vector, {
     limit: topK ?? retrieval.top_k,
-    scoreThreshold: retrieval.minimum_similarity,
+    scoreThreshold: thresholdFor(kind),
     filter,
   });
   return hits.map((h) => ({
@@ -33,4 +39,4 @@ function retrieveResumeEvidence({ query, candidateId, embedder, store, topK }) {
   return retrieve({ kind: 'resumes', query, filter: { candidate_id: candidateId }, embedder, store, topK });
 }
 
-module.exports = { retrieveKnowledge, retrieveResumeEvidence };
+module.exports = { retrieveKnowledge, retrieveResumeEvidence, thresholdFor };

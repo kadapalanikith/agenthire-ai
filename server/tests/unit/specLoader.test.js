@@ -42,7 +42,7 @@ describe('spec loader', () => {
       'email_agent',
     ]);
     expect(specs['system/retry-policy']).toMatchObject({ max_retries: 3, retry_delay_ms: 5000 });
-    expect(specs['evaluation/rag-retrieval'].retrieval).toEqual({ top_k: 5, minimum_similarity: 0.75 });
+    expect(specs['evaluation/rag-retrieval'].retrieval).toEqual({ top_k: 5, minimum_similarity: 0.65, resume_minimum_similarity: 0 });
     expect(hiring['frontend-developer'].required_skills).toEqual(['React', 'JavaScript', 'CSS']);
     expect(Object.keys(specs['workflow/node-states'].states)).toEqual(
       expect.arrayContaining(['pending', 'running', 'success', 'failed', 'waiting_approval', 'skipped'])

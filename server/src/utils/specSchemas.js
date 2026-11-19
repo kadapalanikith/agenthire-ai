@@ -175,7 +175,13 @@ const ragRetrievalSpec = z
     distance: z.enum(['Cosine', 'Dot', 'Euclid']),
     query_instruction: z.string(),
     chunking: z.object({ resume: chunking, policy: chunking }),
-    retrieval: z.object({ top_k: z.number().int().min(1).max(50), minimum_similarity: z.number().min(0).max(1) }),
+    retrieval: z.object({
+      top_k: z.number().int().min(1).max(50),
+      // Knowledge documents (hiring policies, evaluation docs, interview guidelines).
+      minimum_similarity: z.number().min(0).max(1),
+      // The candidate's own resume chunks (already filtered by candidate_id).
+      resume_minimum_similarity: z.number().min(0).max(1),
+    }),
     collections: z.object({ resumes: z.string().min(1), knowledge: z.string().min(1) }),
     knowledge_doc_types: z.array(z.string().min(1)).min(1),
     knowledge_sources: z

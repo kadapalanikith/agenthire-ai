@@ -130,6 +130,32 @@ describe('redaction and fairness filtering', () => {
   });
 });
 
+describe('retrieval thresholds (DECISION D19)', () => {
+  const { thresholdFor, retrieveResumeEvidence, retrieveKnowledge } = require('../../src/rag/retriever');
+  const { createFakeEmbedder } = require('../helpers/fakes');
+  const { collectionConfig } = require('../../src/rag');
+
+  test('knowledge uses minimum_similarity; the candidate’s own resume uses resume_minimum_similarity', () => {
+    expect(thresholdFor('knowledge')).toBe(0.65);
+    expect(thresholdFor('resumes')).toBe(0);
+  });
+
+  test('weakly similar resume chunks are still returned, weakly similar policy chunks are not', async () => {
+    const store = createMemoryStore();
+    const embedder = createFakeEmbedder();
+    const text = 'Built responsive layouts with flexbox and grid';
+    const vector = await embedder.embedQuery(text);
+    for (const kind of ['resumes', 'knowledge']) {
+      const { name, ...cfg } = collectionConfig(kind);
+      await store.ensureCollection(name, cfg);
+      await store.upsert(name, [{ id: kind, vector, payload: { candidate_id: 'c1', doc_type: 'hiring_policy', doc_path: 'k.md', chunk_index: 0, text } }]);
+    }
+    const query = 'Experience with CSS'; // no shared words with the chunk → similarity ≈ 0
+    expect(await retrieveResumeEvidence({ query, candidateId: 'c1', embedder, store })).toHaveLength(1);
+    expect(await retrieveKnowledge({ query, embedder, store })).toHaveLength(0);
+  });
+});
+
 describe('error classification from specs/system/retry-policy.json', () => {
   test('retryable vs non-retryable codes', () => {
     for (const code of ['LLM_TIMEOUT', 'LLM_PROVIDER_ERROR', 'EMAIL_API_FAILURE', 'VECTOR_DB_TIMEOUT']) {

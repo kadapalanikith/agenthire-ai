@@ -28,6 +28,7 @@ spec are documented separately in [`SPEC_RECONSTRUCTION.md`](./SPEC_RECONSTRUCTI
 | D15 | (Phase 4) LLM failure behaviour is set per prompt spec by `llm_failure_policy`: `fail` (the default: errors are classified by the retry policy and retried by the workflow) or `deterministic_fallback`. When no provider is configured, the agents use their rule-based path, tagged `deterministic_fallback`. |
 | D16 | (Phase 4) The LLM may only *add* a skill match when it quotes evidence that appears verbatim in the resume; unverifiable claims are recorded in `rejected_llm_claims` and ignored. The score is always computed in code. |
 | D17 | (Phase 4) Contact details (email, phone, URLs) are redacted before resume text reaches any LLM (`redact_before_llm`). Education is sent to the matching prompt without institution or year (age and prestige proxies). |
+| D19 | (Phase 4, user-approved) Split retrieval thresholds in `rag-retrieval.json`: knowledge documents use `minimum_similarity` **0.65** (the original value was 0.75); the candidate's own resume chunks use `resume_minimum_similarity` **0** (top_k only, already limited to that candidate). Reason: measured bge-small-en-v1.5 scores of 0.62–0.66 for relevant evidence meant that 0.75 hid the resume and the fair-hiring policy from the LLM. |
 | D18 | (Phase 4) Node.js ≥ 22.12 is required (native `require()` of ES modules, used for `unpdf`). Embeddings run locally with Transformers.js; the model (~34 MB) is downloaded once from Hugging Face into `server/.cache/` (gitignored). No candidate data is sent there. |
 
 ---

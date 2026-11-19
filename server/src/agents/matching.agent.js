@@ -211,6 +211,7 @@ async function runMatchingAgent({ candidateId, parsedResume, resumeText, require
       knowledge: knowledge.map((k) => ({ ...k.source, score: k.score })),
       resume: resumeHits.map((h) => ({ chunk_index: h.source.chunk_index, score: h.score, query_skill: h.query_skill })),
       minimum_similarity: getSpec('evaluation/rag-retrieval').retrieval.minimum_similarity,
+      resume_minimum_similarity: getSpec('evaluation/rag-retrieval').retrieval.resume_minimum_similarity,
     },
     excluded_from_scoring: fairness.never_send_to_scoring_prompts,
     llm: llmInfo,
