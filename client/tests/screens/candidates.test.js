@@ -104,3 +104,57 @@ describe('candidate detail', () => {
     expect(screen.queryByTestId('view-resume')).toBeNull();
   });
 });
+
+describe('candidate screening results (Phase 5)', () => {
+  const screened = {
+    ...candidate,
+    status: 'awaiting_review',
+    match_score: 80,
+    ai_recommendation: 'shortlisted',
+    workflow: { id: 'w'.repeat(24), status: 'waiting_approval', current_state: 'human_approval', retry_count: 0 },
+    screening: {
+      parsing: { parse_source: 'llm', llm: { provider: 'groq', model: 'openai/gpt-oss-120b' } },
+      matching: {
+        match_score: 80,
+        matched_required_skills: ['React', 'JavaScript', 'CSS'],
+        matched_preferred_skills: [],
+        missing_skills: ['Next.js', 'Tailwind CSS'],
+        all_skills_matched: false,
+        score_breakdown: {
+          weights: { required_skills: 0.6, preferred_skills: 0.2, experience: 0.2 },
+          required: { matched: 3, total: 3, ratio: 1, points: 60 },
+          preferred: { matched: 0, total: 2, ratio: 0, points: 0 },
+          experience: { candidate_years: 3, minimum: 2, ratio: 1, points: 20 },
+        },
+        explanation: 'Core skills are met; preferred frameworks are missing.',
+        explanation_source: 'llm',
+        evidence: [
+          { skill: 'React', quote: 'Developed single-page apps in React with hooks.', source: 'resume_text' },
+          { skill: 'CSS', quote: 'Built responsive page layouts with flexbox and grid', source: 'llm_verified_quote' },
+        ],
+        rejected_llm_claims: [],
+      },
+      shortlisting: {
+        decision: 'shortlisted',
+        applied_band: { decision: 'shortlisted', min_score: 80, effective_min_score: 80 },
+        recommendation_only: true,
+        spec_version: '1.0.0',
+      },
+    },
+  };
+
+  test('shows the score breakdown, skills, evidence and an advisory recommendation', async () => {
+    useLocalSearchParams.mockReturnValue({ candidateId: CID });
+    mockApi({ [`GET /candidates/${CID}`]: [200, { success: true, data: { candidate: screened } }] });
+    await renderWithProviders(<CandidateDetailScreen />);
+    expect(await screen.findByTestId('ai-recommendation')).toBeTruthy();
+    expect(screen.getByText('Shortlist')).toBeTruthy();
+    expect(screen.getByText('Waiting for approval')).toBeTruthy();
+    expect(screen.getByTestId('recommendation-note').props.children.join('')).toContain('You make the final decision');
+    expect(screen.getByText('60')).toBeTruthy();
+    expect(screen.getByText('3 of 3 · weight 0.6')).toBeTruthy();
+    expect(within(screen.getByTestId('missing-skills')).getByText('Next.js')).toBeTruthy();
+    expect(screen.getByText('Core skills are met; preferred frameworks are missing.')).toBeTruthy();
+    expect(screen.getByText(/AI-found, verified/)).toBeTruthy();
+  });
+});

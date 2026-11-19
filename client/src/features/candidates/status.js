@@ -18,6 +18,13 @@ export const CANDIDATE_FILTERS = [
   { value: 'failed', label: 'Failed' },
 ];
 
+/** Shortlisting recommendations (specs/evaluation/shortlisting-rules.json decisions). */
+export const RECOMMENDATION_META = {
+  shortlisted: { label: 'Shortlist', tone: 'success' },
+  hold: { label: 'Hold', tone: 'warning' },
+  rejected: { label: 'Not a match', tone: 'danger' },
+};
+
 /** workflows.status display (server/src/constants/workflow.js). */
 export const WORKFLOW_STATUS_META = {
   pending: { label: 'Queued', tone: 'neutral' },

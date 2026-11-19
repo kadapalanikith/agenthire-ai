@@ -22,15 +22,23 @@ export function useCandidates({ jobId, status, q } = {}) {
       candidates: data.pages.flatMap((p) => p.data.candidates),
       total: data.pages[0]?.meta.total ?? 0,
     }),
+    // Keep statuses/scores fresh while any listed workflow is still running.
+    refetchInterval: (query) =>
+      query.state.data?.pages.some((p) => p.data.candidates.some((c) => ACTIVE_WORKFLOW.includes(c.workflow?.status))) ? POLL_MS * 2 : false,
   });
 }
 
+const ACTIVE_WORKFLOW = ['pending', 'running'];
+const POLL_MS = 3000;
+
+/** Candidate detail; polls while its workflow is queued or running (stops at approval/terminal states). */
 export function useCandidate(id) {
   return useQuery({
     queryKey: candidateKeys.detail(id),
     queryFn: () => candidatesApi.get(id),
     enabled: Boolean(id),
     select: (d) => d.candidate,
+    refetchInterval: (query) => (ACTIVE_WORKFLOW.includes(query.state.data?.candidate?.workflow?.status) ? POLL_MS : false),
   });
 }
 
