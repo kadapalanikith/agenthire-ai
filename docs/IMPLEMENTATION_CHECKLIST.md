@@ -2,7 +2,7 @@
 
 Legend: ✅ done and tested · 🟡 done, needs follow-up · ⬜ not started
 
-_Last updated: 2026-11-19, end of Phase 3._
+_Last updated: 2026-11-19, end of Phase 4._
 
 ## Phase 0: Repository and specification analysis ✅
 - ✅ Spec read, conflicts identified, architecture approved (`docs/ARCHITECTURE.md`)
@@ -112,7 +112,36 @@ _Last updated: 2026-11-19, end of Phase 3._
 - 🟡 Workflows stay `pending` until LangGraph execution is wired up in Phase 5 (shown honestly as "Queued")
 - 🟡 Universal/App Links (https links opening the native app) need a hosted domain plus `apple-app-site-association` / `assetlinks.json` (Phase 9). Today https links open the web page and `agenthire://` links open the app
 - 🟡 Scanned or image-only PDFs pass the structural check; text extraction and its errors come with the resume parser (Phase 4)
-## Phase 4: Resume parsing, embeddings, RAG, matching ⬜
+## Phase 4: Resume parsing, embeddings, RAG, matching ✅
+**Specs**
+- ✅ `retry-policy` v1.1.0: adds `LLM_PROVIDER_ERROR` (retryable) and `LLM_CONFIG_ERROR`, `NO_EXTRACTABLE_TEXT` (non-retryable)
+- ✅ `resume-parser` v1.1.0: `min_text_chars`, `llm_failure_policy`, `redact_before_llm`, `skill_aliases`
+- ✅ `matching-agent` v1.1.0: `llm_failure_policy`, evidence rules, RAG query templates
+- ✅ `rag-retrieval` v1.1.0: bge query instruction, `knowledge_sources`; cross-checks between specs
+- ✅ Knowledge documents: fair hiring policy, frontend evaluation guide, structured interview guidelines
+
+**Server**
+- ✅ Spec-driven error classes (`AgentError`, `classifyError`)
+- ✅ Real PDF text extraction (pdf.js via `unpdf`); `INVALID_PDF` / `NO_EXTRACTABLE_TEXT`
+- ✅ LLM client: Groq (LangChain `ChatGroq`) → OpenRouter (LangChain `ChatOpenAI`) fallback, JSON mode, timeouts, Zod-validated output, error codes from the retry policy
+- ✅ Embeddings: BAAI/bge-small-en-v1.5 via Transformers.js (q8 ONNX, CLS pooling, normalised, query instruction), 384-dim check against the spec
+- ✅ Vector stores: Qdrant (collections, payload indexes, Query API, filters, error mapping) and an in-memory equivalent for tests
+- ✅ Chunker (500 / 1000 from the spec), deterministic UUIDv5 point ids, retriever (top_k 5, minimum_similarity 0.75 from the spec)
+- ✅ Knowledge ingestion (`npm run ingest:knowledge`), per-document replacement
+- ✅ Resume Parser Agent: extraction, contact redaction before the LLM, skill canonicalisation (known + job skills + aliases), protected-attribute stripping, deterministic fallback
+- ✅ Embedding Agent: idempotent per-candidate re-indexing
+- ✅ Matching Agent: job-specific requirements merged with the hiring spec, deterministic weighted score with breakdown, evidence quotes, LLM matches only with verified verbatim quotes, RAG context (knowledge + resume chunks) with traceable sources, no name/contact/graduation year in the prompt
+- ✅ Demo resume `demo-data/resumes/john-react-resume.pdf` (`npm run demo:resume`) and `npm run agents:dry-run`
+
+**Tests and checks (Phase 4)**
+- ✅ Server: 150/150 (40 new: chunking, point ids, vector stores, skills, redaction, error classification, PDF extraction on real files, LLM fallback and error mapping, all three agents, knowledge ingestion)
+- ✅ Opt-in real-service test (`RUN_REAL_SERVICES=1`): real bge-small + real Qdrant, 2/2 passed, test data cleaned up
+- ✅ Docker Compose stack (MongoDB 8.0 + Qdrant 1.15.4) started and used
+- ✅ Live dry run on the demo resume against Qdrant: deterministic parse, 3 chunks embedded, score 100 (60 + 20 + 20), evaluation guide retrieved at 0.864
+- 🟡 **LLM path not verified live**: no `GROQ_API_KEY` / `OPENROUTER_API_KEY` in this environment. It is covered by tests with scripted providers only
+- 🟡 **`minimum_similarity` 0.75 is high for bge-small** (measured: relevant policy chunk 0.664, relevant resume chunk 0.719, both filtered). Decision pending; the value is unchanged
+- 🟡 Parser and matching results are not yet saved to candidates; the LangGraph workflow persists them in Phase 5
+- 🟡 Knowledge ingestion replaces chunks per document but does not delete points for documents removed from `specs/knowledge/`
 ## Phase 5: LangGraph orchestration and shortlisting ⬜
 ## Phase 6: Human approval, workflow monitoring, resumability ⬜
 ## Phase 7: Interview generation and email ⬜

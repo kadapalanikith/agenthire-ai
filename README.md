@@ -25,13 +25,13 @@ docs/     Architecture, API reference, implementation checklist
 
 ## Status
 
-Phases 1–3 are complete: foundation and authentication, recruiter dashboard and job management, and
-public candidate applications with PDF uploads. See
+Phases 1–4 are complete: foundation and authentication, recruiter dashboard and job management, public
+candidate applications with PDF uploads, and the resume parser, embedding and matching agents with RAG. See
 [`docs/IMPLEMENTATION_CHECKLIST.md`](./docs/IMPLEMENTATION_CHECKLIST.md).
 
 ## Getting started
 
-Prerequisites: Node.js 20+ and Docker Desktop. Android Studio and Xcode are **not** required, because
+Prerequisites: Node.js 22.12+ and Docker Desktop. Android Studio and Xcode are **not** required, because
 native builds use Expo EAS.
 
 ```bash
@@ -43,6 +43,8 @@ cd server
 cp .env.example .env          # then set JWT_SECRET (see the comment in the file)
 npm install
 npm run check:specs           # validate /specs
+npm run ingest:knowledge      # embed specs/knowledge/** into Qdrant (first run downloads the model)
+npm run agents:dry-run        # parser → embedding → matching on the demo resume (prints results)
 npm run dev                   # http://localhost:4000
 
 # 3. App
@@ -56,7 +58,8 @@ npm start                     # then open in a development build
 ### Tests and checks
 
 ```bash
-cd server && npm test                         # Jest + Supertest (in-memory MongoDB)
+cd server && npm test                         # Jest + Supertest (in-memory MongoDB, fake LLM/embedder)
+cd server && RUN_REAL_SERVICES=1 npm test -- realServices   # real bge model + Qdrant (Docker Compose)
 cd client && npm test                         # jest-expo + React Native Testing Library
 cd client && npm run export:web               # web build check
 cd client && npm run export:android           # Android JS bundle check
